@@ -32,9 +32,9 @@ function Stacked({ words }) {
 
 // A column of characters (e.g. vertical "SET", or the trim annunciation),
 // positioned and sized like the device's vertical text.
-function VertStack({ chars }) {
+function VertStack({ chars, cls }) {
   return (
-    <span className="lcd-vertset">
+    <span className={'lcd-vertset' + (cls ? ' ' + cls : '')}>
       {chars.map((c, i) => (
         <span key={i}>{c}</span>
       ))}
@@ -49,8 +49,8 @@ function VertSet() {
 // Trim annunciation (§4.3): an up-arrow above "U"/"P", or "D"/"N" above a
 // down-arrow — rendered vertically like the SET text (Fig 4.3a/4.3b).
 function TrimVert({ trim }) {
-  if (trim === 'up') return <VertStack chars={['↑', 'U', 'P']} />
-  if (trim === 'dn') return <VertStack chars={['D', 'N', '↓']} />
+  if (trim === 'up') return <VertStack chars={['↑', 'U', 'P']} cls="lcd-trim-vert lcd-trim-up" />
+  if (trim === 'dn') return <VertStack chars={['D', 'N', '↓']} cls="lcd-trim-vert lcd-trim-down" />
   return null
 }
 

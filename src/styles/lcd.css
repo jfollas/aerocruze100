@@ -369,6 +369,15 @@
   font-size: var(--fs-vert); /* one step below the label size */
   line-height: 0.78; /* tight vertical character spacing */
 }
+/* the trim annunciation sits a little left of the SET column */
+.lcd-vertset.lcd-trim-vert {
+  left: calc(52% - 12px);
+}
+/* UP keeps the top-aligned SET position; DOWN is bottom-aligned (arrow at foot) */
+.lcd-vertset.lcd-trim-down {
+  top: auto;
+  bottom: calc(8% + 7px);
+}
 
 /* full-screen messages */
 .lcd-full {
