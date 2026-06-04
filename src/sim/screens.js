@@ -163,6 +163,7 @@ export function deriveDisplay(s) {
     return { elvl: { qual: gpsQual(s), bank: `${b}°`, side, vert: verticalZone(s), cursor: s.cursor } }
   }
 
+  model.klass = 'lcd-op' // engaged operating screen (TRK/GPSS/GPS NAV …), §5.3
   model.topLeft = { header: 'TRK', qual: gpsQual(s), value: pad(s.curTrack), trim: s.trim }
   model.bottomLeft = lateralZone(s)
 
@@ -175,7 +176,8 @@ export function deriveDisplay(s) {
   if (s.warning === 'MIN_AS') model.topRight = { value: 'MIN AS', plain: true }
   else if (s.warning === 'MAX_AS') model.topRight = { value: 'MAX AS', plain: true }
   else if (['SEL', 'ALTHOLD', 'GS_ARM', 'GS_CPLD', 'GS_FLG'].includes(s.verticalMode)) {
-    model.topRight = { label: 'SEL', value: String(Math.round(s.selAlt)) }
+    // SEL altitude renders with the smaller/raised hundreds (like the pre-select).
+    model.topRight = { label: 'SEL', alt: Math.round(s.selAlt) }
   }
   model.bottomRight = verticalZone(s)
   return model

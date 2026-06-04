@@ -146,21 +146,57 @@
 .lcd-home .bl-apoff .lcd-big {
   font-size: calc(var(--label) + 2 * var(--step));
 }
-/* GPS signal indicator: fixed position on the home screen, per symbol */
-.lcd-home .lcd-qual-fixed {
+/* GPS signal indicator: fixed position (per symbol) on the home screen and the
+   engaged operating screen, just below the header. */
+.lcd-home .lcd-qual-fixed,
+.lcd-op .lcd-qual-fixed {
   position: absolute;
   top: calc(8% - 1px + var(--label)); /* just below the header, nudged up 4px total */
   font-size: calc(20cqh + var(--step)); /* one step larger (24cqh) */
 }
-.lcd-home .lcd-qual-fixed.q-plus {
+.lcd-home .lcd-qual-fixed.q-plus,
+.lcd-op .lcd-qual-fixed.q-plus {
   left: 12%;
 }
-.lcd-home .lcd-qual-fixed.q-star {
+.lcd-home .lcd-qual-fixed.q-star,
+.lcd-op .lcd-qual-fixed.q-star {
   left: 17%;
 }
-.lcd-home .lcd-qual-fixed.q-dot {
+.lcd-home .lcd-qual-fixed.q-dot,
+.lcd-op .lcd-qual-fixed.q-dot {
   left: 12%;
   top: calc(8% - 5px + var(--label)); /* period sits low — raise it 4px */
+}
+
+/* Engaged operating screen (§5.3): TRK / GPSS / GPS NAV. Labels match the SEL
+   ALT screen; the heading values (current track + selected track) are large
+   like the bank-angle digits; the SEL altitude uses the raised hundreds. */
+.lcd-op {
+  --label: 30cqh; /* TRK / SEL / SVS / ALT labels, same as SEL ALT */
+  --step: 4cqh;
+  --alt-h: 22cqh; /* SEL-altitude hundreds (smaller, raised) */
+}
+.lcd-op .lcd-lbl {
+  font-size: var(--label);
+}
+.lcd-op .tl,
+.lcd-op .tr {
+  top: calc(8% + 3px); /* same top margin as SEL ALT */
+}
+.lcd-op .bl,
+.lcd-op .br {
+  bottom: 8%;
+}
+/* heading values (current track top-left, selected track bottom-left) */
+.lcd-op .lcd-head-val {
+  font-size: 42cqh;
+}
+/* SEL altitude top-right: large thousands + smaller, top-aligned hundreds */
+.lcd-op .tr .lcd-alt .lcd-big {
+  font-size: var(--alt-h);
+}
+.lcd-op .tr .lcd-alt-k {
+  font-size: calc(var(--alt-h) + 2 * var(--step));
 }
 
 /* Emergency level (§8.1): BANK at the top-left with a large bottom-aligned bank

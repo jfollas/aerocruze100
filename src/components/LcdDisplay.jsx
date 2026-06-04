@@ -11,8 +11,12 @@ function Qual({ char }) {
 // per-symbol class so the GPS signal indicator can be placed individually
 const qualSym = (char) => (char.includes('+') ? 'q-plus' : char === '*' ? 'q-star' : 'q-dot')
 
-function Big({ children, underline }) {
-  return <span className={'lcd-big' + (underline ? ' lcd-underline' : '')}>{children}</span>
+function Big({ children, underline, cls }) {
+  return (
+    <span className={'lcd-big' + (underline ? ' lcd-underline' : '') + (cls ? ' ' + cls : '')}>
+      {children}
+    </span>
+  )
 }
 
 function Stacked({ words }) {
@@ -44,7 +48,7 @@ function TopLeft({ tl, suppressQual }) {
         <span className="lcd-lbl">{tl.header}</span>
         {!suppressQual && <Qual char={tl.qual} />}
       </span>
-      {tl.value != null && <Big>{tl.value}</Big>}
+      {tl.value != null && <Big cls="lcd-head-val">{tl.value}</Big>}
       {tl.trim && tl.trim !== 'none' && (
         <span className="lcd-trim">{tl.trim === 'up' ? 'U▲' : 'DN▼'}</span>
       )}
@@ -87,7 +91,7 @@ function BottomLeft({ bl, cursor }) {
   return (
     <div className="lcd-zone bl">
       <span className="lcd-lbl">{bl.label}</span>
-      <Big underline={cursor === 'track'}>{bl.value}</Big>
+      <Big cls="lcd-head-val" underline={cursor === 'track'}>{bl.value}</Big>
     </div>
   )
 }
@@ -228,15 +232,16 @@ export default function LcdDisplay({ state }) {
     )
   }
 
-  // On the home screen the GPS signal indicator is placed at a fixed position
-  // (per symbol), independent of the header, rather than flowing under it.
-  const homeQual = d.klass === 'lcd-home' ? d.topLeft?.qual : null
+  // On the home and engaged-operating screens the GPS signal indicator is placed
+  // at a fixed position (per symbol), independent of the header, rather than
+  // flowing under it.
+  const fixedQual = d.klass === 'lcd-home' || d.klass === 'lcd-op' ? d.topLeft?.qual : null
 
   return (
     <div className={'lcd' + (d.klass ? ' ' + d.klass : '')}>
-      <TopLeft tl={d.topLeft} suppressQual={!!homeQual} />
-      {homeQual && (
-        <span className={'lcd-qual lcd-flash lcd-qual-fixed ' + qualSym(homeQual)}>{homeQual}</span>
+      <TopLeft tl={d.topLeft} suppressQual={!!fixedQual} />
+      {fixedQual && (
+        <span className={'lcd-qual lcd-flash lcd-qual-fixed ' + qualSym(fixedQual)}>{fixedQual}</span>
       )}
       {d.vertSet && <VertSet />}
       <BottomLeft bl={d.bottomLeft} cursor={d.cursor} />
