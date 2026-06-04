@@ -90,10 +90,11 @@ function AltValue({ value, underline }) {
   if (v < 1000) return <Big underline={underline}>{String(v)}</Big>
   const thousands = Math.floor(v / 1000)
   const hundreds = String(v % 1000).padStart(3, '0')
+  // thousands render larger than normal; hundreds at normal size, top-aligned
   return (
     <span className={'lcd-alt' + (underline ? ' lcd-underline' : '')}>
-      <span className="lcd-big">{thousands}</span>
-      <span className="lcd-alt-h">{hundreds}</span>
+      <span className="lcd-alt-k">{thousands}</span>
+      <span className="lcd-big">{hundreds}</span>
     </span>
   )
 }

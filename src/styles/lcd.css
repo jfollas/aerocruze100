@@ -11,7 +11,7 @@
   overflow: hidden;
   color: #8fb6ff;
   font-family: var(--lcd-font, 'Aerocruze LCD'), 'Segoe UI', Arial, sans-serif;
-  font-weight: 600;
+  font-weight: 450;
   text-transform: uppercase;
   line-height: 1;
   --glow: 0 0 2cqh rgba(120, 170, 255, 0.65);
@@ -53,13 +53,15 @@
   text-underline-offset: 1.5cqh;
 }
 
-/* altitude with smaller hundreds (e.g. 16 + 500) */
+/* altitude pre-select: larger thousands + normal-size hundreds, top-aligned
+   (e.g. a big "16" with a normal-size "500" riding at the top) */
 .lcd-alt {
   display: inline-flex;
-  align-items: baseline;
+  align-items: flex-start;
 }
-.lcd-alt-h {
-  font-size: 27cqh;
+.lcd-alt-k {
+  font-size: 50cqh;
+  line-height: 1;
 }
 .lcd-alt.lcd-underline {
   text-decoration: none;

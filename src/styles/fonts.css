@@ -5,7 +5,7 @@
 @font-face {
   font-family: 'Aerocruze LCD';
   font-style: normal;
-  font-weight: 400 700;
+  font-weight: 300 700; /* variable weight axis */
   font-display: swap;
   src: url('./fonts/fredoka.woff2') format('woff2');
 }
