@@ -251,7 +251,7 @@
 .lcd-op .op-svs {
   position: absolute;
   right: calc(3% + 10px);
-  bottom: 8%;
+  bottom: calc(8% + 4px); /* raised 4px */
   font-size: var(--fs-alt-hundreds); /* same size as the ALT hundreds */
 }
 /* SkyView variant: SVS renders exactly as on the TRK page; the ALT label is
