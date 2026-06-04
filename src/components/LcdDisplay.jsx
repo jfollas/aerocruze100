@@ -185,7 +185,7 @@ export default function LcdDisplay({ state }) {
   }
 
   return (
-    <div className="lcd">
+    <div className={'lcd' + (d.klass ? ' ' + d.klass : '')}>
       <TopLeft tl={d.topLeft} vertSet={d.vertSet} />
       <BottomLeft bl={d.bottomLeft} cursor={d.cursor} />
       <TopRight tr={d.topRight} />

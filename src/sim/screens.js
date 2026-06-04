@@ -100,12 +100,12 @@ export function deriveDisplay(s) {
     }
   }
 
-  // Altitude select / pre-select setup (§5.1, §5.4.3, §5.4.4). The selected
-  // altitude renders its hundreds in a smaller size (device convention).
+  // Altitude select / pre-select setup (§5.4.3, §5.4.4). Larger SEL ALT label,
+  // thousands larger than the (normal-size, top-aligned) hundreds, no vertical SET.
   if (s.screen === 'SEL_ALT') {
     const model = {
+      klass: 'lcd-sel-alt',
       topLeft: { header: 'SEL ALT' },
-      vertSet: true,
       topRight: { alt: Math.round(s.selAlt), underline: s.cursor === 'altSel' },
     }
     if (s.apEngaged) {
