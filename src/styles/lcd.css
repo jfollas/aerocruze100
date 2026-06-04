@@ -47,6 +47,8 @@
 .lcd-qual {
   font-size: 20cqh;
   line-height: 0.6;
+  position: relative;
+  top: -3px; /* nudge the GPS signal indicator up */
 }
 
 .lcd-underline {
