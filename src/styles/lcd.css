@@ -50,7 +50,8 @@
 
 .lcd-underline {
   text-decoration: underline;
-  text-underline-offset: 1.5cqh;
+  text-decoration-thickness: 1cqh; /* consistent cursor thickness */
+  text-underline-offset: 2.6cqh; /* a little more spacing from the digits */
 }
 
 /* altitude pre-select: larger thousands + normal-size hundreds, top-aligned
@@ -65,15 +66,15 @@
 }
 .lcd-alt.lcd-underline {
   text-decoration: none;
-  border-bottom: 0.5cqh solid currentColor;
-  padding-bottom: 1cqh;
+  border-bottom: 1cqh solid currentColor; /* matches the text underline thickness */
+  padding-bottom: 2.3cqh; /* matching spacing from the digits */
 }
 
 /* SEL ALT view tweaks: larger labels, smaller altitude digits, and inset
    margins so the values clear the bezel. */
 .lcd-sel-alt {
   --alt-h: 31.5cqh; /* 100s (hundreds) size */
-  --alt-step: 3cqh; /* one font-size step */
+  --alt-step: 4cqh; /* one font-size step */
 }
 .lcd-sel-alt .lcd-lbl {
   font-size: 30cqh; /* SEL ALT / SEL VS labels, 1.5x */
