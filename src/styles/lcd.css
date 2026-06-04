@@ -84,6 +84,10 @@
 .lcd-sel-alt .br {
   right: calc(3% + 10px);
 }
+.lcd-sel-alt .tl,
+.lcd-sel-alt .bl {
+  left: calc(3% + 10px);
+}
 
 /* header + flashing quality char stacked in a column */
 .lcd-headcol {
