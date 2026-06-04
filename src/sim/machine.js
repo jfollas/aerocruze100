@@ -31,7 +31,7 @@ export const initialState = {
   preselectArmed: false,
   emergencyLevel: false,
   cwsHeld: false,
-  aep: 'off', // off | stby | active
+  aep: 'stby', // off | stby | active — standby by default & after each power cycle (§8.2)
   warning: null, // null | SENSOR | MIN_AS | MAX_AS
 
   // sim-driven actual values

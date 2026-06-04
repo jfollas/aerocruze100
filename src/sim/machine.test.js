@@ -183,13 +183,22 @@ describe('safety features', () => {
     expect(d.flashing).toBe(true)
   })
 
-  it('MODE toggles AEP arming while disengaged (§8.2)', () => {
+  it('AEP defaults to standby; MODE toggles it off/standby while disengaged (§8.2)', () => {
     let s = poweredOn()
+    expect(s.aep).toBe('stby') // standby by default / after power cycle
+    s = reducer(s, E.mode())
     expect(s.aep).toBe('off')
     s = reducer(s, E.mode())
     expect(s.aep).toBe('stby')
-    s = reducer(s, E.mode())
+  })
+
+  it('AEP returns to standby after a power cycle (§8.2)', () => {
+    let s = reducer(poweredOn(), E.mode()) // turn AEP off
     expect(s.aep).toBe('off')
+    s = reducer(s, E.setConfig({ power: 'off' }))
+    s = reducer(s, E.setConfig({ power: 'on' }))
+    s = reducer(s, E.tick(3))
+    expect(s.aep).toBe('stby')
   })
 
   it('engaged with no GPS shows BANK / gyro backup (§4.1.2, §8.3)', () => {
