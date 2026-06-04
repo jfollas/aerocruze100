@@ -139,7 +139,7 @@
    a little extra right margin so it isn't tight against the edge. */
 .lcd-home .bl-apoff {
   position: absolute;
-  right: calc(3% + 10px + 4px);
+  right: calc(3% + 10px); /* universal right margin */
   bottom: 8%;
   align-items: baseline;
 }
