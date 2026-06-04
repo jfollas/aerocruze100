@@ -212,6 +212,21 @@ describe('safety features', () => {
     expect(d.elvl).toBeTruthy()
     expect(d.elvl.bank).toContain('°')
   })
+
+  it('in gyro backup, the knob adjusts bank, then SVS after a knob press', () => {
+    let s = poweredOn({ gpsStatus: 'NOGPS', groundSpeed: 0 })
+    s = reducer(s, E.knobPress()) // engage -> gyro, cursor on bank
+    s = reducer(s, E.tick(0.1))
+    expect(s.cursor).toBe('track')
+    s = reducer(s, E.knobCw())
+    expect(s.selBank).toBe(1) // rotating adjusts bank
+    s = reducer(s, E.knobPress()) // move cursor to SVS
+    expect(s.cursor).toBe('vs')
+    const vs0 = s.selVS
+    s = reducer(s, E.knobCw())
+    expect(s.selVS).toBe(vs0 + 100) // now rotating adjusts SVS
+    expect(s.selBank).toBe(1) // bank unchanged
+  })
 })
 
 describe('Dynon SkyView mode (Install Manual §10)', () => {

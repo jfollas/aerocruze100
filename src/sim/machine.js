@@ -276,8 +276,10 @@ function rotate(s, dir, fine) {
       // In SkyView mode all commands come from the SkyView, not the knob (§10.2).
       if (s.lateralMode === 'SKYVIEW') return s
       if (!s.apEngaged) return s // track select only works engaged
-      // Gyro backup: knob selects bank angle, press+rotate (fine) opens trim (§8.3).
+      // Gyro backup: knob selects bank angle (or SVS when the cursor is on it),
+      // press+rotate (fine) opens the trim screen (§8.3).
       if (isGyro(s)) {
+        if (s.cursor === 'vs') return { ...s, selVS: s.selVS + dir * 100, verticalMode: 'SVS' }
         if (fine) return { ...s, screen: 'GYRO_TRIM', cursor: 'gyroTrim' }
         return { ...s, selBank: clamp(s.selBank + dir * 1, -30, 30) }
       }

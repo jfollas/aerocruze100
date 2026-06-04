@@ -174,6 +174,8 @@ export default function LcdDisplay({ state }) {
   // (§8.1) and the gyro-backup / no-GPS engaged screen (§4.1.2, §8.3).
   if (d.elvl) {
     const v = d.elvl.vert
+    const bankFocus = d.elvl.cursor === 'track'
+    const svsFocus = d.elvl.cursor === 'vs'
     return (
       <div className="lcd lcd-elvl">
         <div className="elvl-bank">
@@ -181,7 +183,10 @@ export default function LcdDisplay({ state }) {
             <span className="lcd-lbl">BANK</span>
             <Qual char={d.elvl.qual} />
           </span>
-          <span className="elvl-deg lcd-underline">{d.elvl.bank}</span>
+          <span className={'elvl-deg' + (bankFocus ? ' lcd-underline' : '')}>
+            {d.elvl.bank}
+            {d.elvl.side && <span className="elvl-deg-side">{d.elvl.side}</span>}
+          </span>
         </div>
         {v.stacked ? (
           <span className="elvl-vert-stacked">
@@ -190,7 +195,7 @@ export default function LcdDisplay({ state }) {
         ) : (
           <>
             <span className="elvl-svs-lbl">{v.label}</span>
-            <span className="elvl-svs">
+            <span className={'elvl-svs' + (svsFocus ? ' lcd-underline' : '')}>
               {v.value}
               {v.arrow}
             </span>

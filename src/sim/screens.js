@@ -155,12 +155,12 @@ export function deriveDisplay(s) {
   if (s.emergencyLevel) {
     const b = Math.round(Math.abs(s.bankAngle))
     const side = s.bankAngle > 1 ? 'R' : s.bankAngle < -1 ? 'L' : ''
-    return { elvl: { qual: gpsQual(s), bank: `${b}°${side}`, vert: verticalZone(s) } }
+    return { elvl: { qual: gpsQual(s), bank: `${b}°`, side, vert: verticalZone(s), cursor: s.cursor } }
   }
   if (isGyro(s)) {
     const b = Math.round(Math.abs(s.selBank))
     const side = s.selBank > 0 ? 'R' : s.selBank < 0 ? 'L' : ''
-    return { elvl: { qual: gpsQual(s), bank: `${b}°${side}`, vert: verticalZone(s) } }
+    return { elvl: { qual: gpsQual(s), bank: `${b}°`, side, vert: verticalZone(s), cursor: s.cursor } }
   }
 
   model.topLeft = { header: 'TRK', qual: gpsQual(s), value: pad(s.curTrack), trim: s.trim }

@@ -178,9 +178,17 @@
   font-size: 30cqh; /* BANK, same as SEL ALT */
 }
 .lcd-elvl .elvl-deg {
+  position: relative;
   margin-top: auto; /* bottom-aligned */
   font-size: 42cqh; /* large number */
   line-height: 1;
+}
+/* L/R qualifier sits to the right of the (centered) bank angle, out of flow */
+.lcd-elvl .elvl-deg-side {
+  position: absolute;
+  left: 100%;
+  bottom: 0;
+  margin-left: 1.5cqw;
 }
 .lcd-elvl .elvl-svs-lbl {
   position: absolute;
