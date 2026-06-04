@@ -246,16 +246,26 @@ export default function LcdDisplay({ state }) {
       {d.vertSet && <VertSet />}
       <BottomLeft bl={d.bottomLeft} cursor={d.cursor} />
       <TopRight tr={d.topRight} />
-      {d.klass === 'lcd-op' && d.bottomRight && !d.bottomRight.stacked ? (
-        // SVS on the operating screen: fixed label + right-aligned value so the
-        // label stays put for a 2- to 4-digit value (as on the level screen).
-        <>
-          <span className="lcd-lbl op-svs-lbl">{d.bottomRight.label}</span>
-          <span className={'lcd-big op-svs' + (d.cursor === 'vs' ? ' lcd-underline' : '')}>
-            {d.bottomRight.value}
-            {d.bottomRight.arrow}
+      {d.klass === 'lcd-op' && d.bottomRight ? (
+        d.bottomRight.stacked ? (
+          // ALT HOLD / GS ARM / GS CPLD / GS FLG: the first word is a superscript
+          // tucked to the upper-left of the second word, sharing the SEL-label
+          // left of the altitude above it (e.g. "ᴬᴸᵀHOLD").
+          <span className="op-annun">
+            <span className="op-annun-sup">{d.bottomRight.stacked[0]}</span>
+            {d.bottomRight.stacked[1]}
           </span>
-        </>
+        ) : (
+          // SVS: fixed label + right-aligned value so the label stays put for a
+          // 2- to 4-digit value (as on the level screen).
+          <>
+            <span className="lcd-lbl op-svs-lbl">{d.bottomRight.label}</span>
+            <span className={'lcd-big op-svs' + (d.cursor === 'vs' ? ' lcd-underline' : '')}>
+              {d.bottomRight.value}
+              {d.bottomRight.arrow}
+            </span>
+          </>
+        )
       ) : (
         <BottomRight br={d.bottomRight} cursor={d.cursor} />
       )}
