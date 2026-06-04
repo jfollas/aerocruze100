@@ -1,5 +1,28 @@
 import '../styles/config.css'
 
+// The autopilot accepts one nav source at a time. In our aircraft a panel
+// selector switch discretely picks between the Dynon SkyView and the Garmin
+// GNS430W; the other navigators are kept here for completeness. Each option
+// maps to a mutually-exclusive set of the underlying signal flags.
+const NAV_SOURCES = {
+  none: { gpsData: 'none', arinc: 'none', skyview: 'off' },
+  gns430w: { gpsData: 'ifr', arinc: 'none', skyview: 'off' }, // WAAS IFR -> GPSS + LPV
+  skyview: { gpsData: 'none', arinc: 'none', skyview: 'on' },
+  portable: { gpsData: 'portable', arinc: 'none', skyview: 'off' }, // RS-232 -> GPS NAV
+  aspen: { gpsData: 'ifr', arinc: 'aspen', skyview: 'off' },
+  g5: { gpsData: 'ifr', arinc: 'g5', skyview: 'off' },
+}
+
+// Derive which selector position the current signal flags represent.
+function navSourceOf(s) {
+  if (s.skyview === 'on') return 'skyview'
+  if (s.arinc === 'aspen') return 'aspen'
+  if (s.arinc === 'g5') return 'g5'
+  if (s.gpsData === 'ifr') return 'gns430w'
+  if (s.gpsData === 'portable') return 'portable'
+  return 'none'
+}
+
 // A segmented control bound to one config field.
 function Seg({ label, value, options, onChange }) {
   return (
@@ -57,7 +80,20 @@ export default function ConfigPanel({ state, actions }) {
       </div>
 
       <div className="cfg-group">
-        <h3>GPS / navigators</h3>
+        <h3>Nav source (panel selector)</h3>
+        <Seg
+          label="Source"
+          value={navSourceOf(state)}
+          options={[
+            { value: 'gns430w', text: 'GNS430W' },
+            { value: 'skyview', text: 'SkyView' },
+            { value: 'portable', text: 'Portable' },
+            { value: 'aspen', text: 'Aspen' },
+            { value: 'g5', text: 'G5' },
+            { value: 'none', text: 'None' },
+          ]}
+          onChange={(p) => set(NAV_SOURCES[p])}
+        />
         <Seg
           label="GPS signal"
           value={state.gpsStatus}
@@ -69,26 +105,6 @@ export default function ConfigPanel({ state, actions }) {
           onChange={(p) => set({ gpsStatus: p })}
         />
         <Seg
-          label="GPS data"
-          value={state.gpsData}
-          options={[
-            { value: 'none', text: 'None' },
-            { value: 'portable', text: 'Portable (NAV)' },
-            { value: 'ifr', text: 'IFR (GPSS)' },
-          ]}
-          onChange={(p) => set({ gpsData: p })}
-        />
-        <Seg
-          label="ARINC source"
-          value={state.arinc}
-          options={[
-            { value: 'none', text: 'None' },
-            { value: 'aspen', text: 'Aspen' },
-            { value: 'g5', text: 'G5' },
-          ]}
-          onChange={(p) => set({ arinc: p })}
-        />
-        <Seg
           label="Ground speed"
           value={state.groundSpeed > 10 ? 'fly' : 'gnd'}
           options={[
@@ -97,84 +113,79 @@ export default function ConfigPanel({ state, actions }) {
           ]}
           onChange={(p) => set({ groundSpeed: p === 'fly' ? 120 : 0 })}
         />
-        <Seg
-          label="LPV approach"
-          value={state.approachActive ? 'yes' : 'no'}
-          options={[
-            { value: 'no', text: 'Off' },
-            { value: 'yes', text: 'Active' },
-          ]}
-          onChange={(p) => set({ approachActive: p === 'yes' })}
-        />
+        {state.gpsData === 'ifr' && (
+          <Seg
+            label="LPV approach"
+            value={state.approachActive ? 'yes' : 'no'}
+            options={[
+              { value: 'no', text: 'Off' },
+              { value: 'yes', text: 'Active' },
+            ]}
+            onChange={(p) => set({ approachActive: p === 'yes' })}
+          />
+        )}
       </div>
 
-      <div className="cfg-group">
-        <h3>Dynon SkyView</h3>
-        <Seg
-          label="Connected"
-          value={state.skyview}
-          options={[
-            { value: 'off', text: 'No' },
-            { value: 'on', text: 'Yes' },
-          ]}
-          onChange={(p) => set({ skyview: p })}
-        />
-        <Seg
-          label="CDI source"
-          value={state.skyviewCdi}
-          options={[
-            { value: 'heading', text: 'Heading bug' },
-            { value: 'flightplan', text: 'Flight plan' },
-            { value: 'navaid', text: 'VOR/LOC/ILS' },
-          ]}
-          onChange={(p) => set({ skyviewCdi: p })}
-        />
-        <div className="cfg-row">
-          <span className="cfg-label">Heading bug</span>
-          <input
-            type="range"
-            min="0"
-            max="359"
-            value={state.svHeadingBug}
-            onChange={(e) => set({ svHeadingBug: Number(e.target.value) })}
+      {state.skyview === 'on' && (
+        <div className="cfg-group">
+          <h3>Dynon SkyView bugs</h3>
+          <Seg
+            label="CDI source"
+            value={state.skyviewCdi}
+            options={[
+              { value: 'heading', text: 'Heading bug' },
+              { value: 'flightplan', text: 'Flight plan' },
+              { value: 'navaid', text: 'VOR/LOC/ILS' },
+            ]}
+            onChange={(p) => set({ skyviewCdi: p })}
           />
-          <span className="cfg-val">{state.svHeadingBug}°</span>
-        </div>
-        <Seg
-          label="Altitude bug"
-          value={state.svAltBugSet ? 'on' : 'off'}
-          options={[
-            { value: 'off', text: 'Not set' },
-            { value: 'on', text: 'Set' },
-          ]}
-          onChange={(p) => set({ svAltBugSet: p === 'on' })}
-        />
-        <div className="cfg-row">
-          <span className="cfg-label">Alt bug</span>
-          <input
-            type="range"
-            min="0"
-            max="17500"
-            step="100"
-            value={state.svAltBug}
-            disabled={!state.svAltBugSet}
-            onChange={(e) => set({ svAltBug: Number(e.target.value) })}
+          <div className="cfg-row">
+            <span className="cfg-label">Heading bug</span>
+            <input
+              type="range"
+              min="0"
+              max="359"
+              value={state.svHeadingBug}
+              onChange={(e) => set({ svHeadingBug: Number(e.target.value) })}
+            />
+            <span className="cfg-val">{state.svHeadingBug}°</span>
+          </div>
+          <Seg
+            label="Altitude bug"
+            value={state.svAltBugSet ? 'on' : 'off'}
+            options={[
+              { value: 'off', text: 'Not set' },
+              { value: 'on', text: 'Set' },
+            ]}
+            onChange={(p) => set({ svAltBugSet: p === 'on' })}
           />
-          <span className="cfg-val">{state.svAltBug}</span>
+          <div className="cfg-row">
+            <span className="cfg-label">Alt bug</span>
+            <input
+              type="range"
+              min="0"
+              max="17500"
+              step="100"
+              value={state.svAltBug}
+              disabled={!state.svAltBugSet}
+              onChange={(e) => set({ svAltBug: Number(e.target.value) })}
+            />
+            <span className="cfg-val">{state.svAltBug}</span>
+          </div>
+          <div className="cfg-row">
+            <span className="cfg-label">VS bug</span>
+            <input
+              type="range"
+              min="-1500"
+              max="1500"
+              step="100"
+              value={state.svVsBug}
+              onChange={(e) => set({ svVsBug: Number(e.target.value) })}
+            />
+            <span className="cfg-val">{state.svVsBug}</span>
+          </div>
         </div>
-        <div className="cfg-row">
-          <span className="cfg-label">VS bug</span>
-          <input
-            type="range"
-            min="-1500"
-            max="1500"
-            step="100"
-            value={state.svVsBug}
-            onChange={(e) => set({ svVsBug: Number(e.target.value) })}
-          />
-          <span className="cfg-val">{state.svVsBug}</span>
-        </div>
-      </div>
+      )}
 
       <div className="cfg-group">
         <h3>Induce conditions</h3>

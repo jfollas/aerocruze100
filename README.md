@@ -21,12 +21,14 @@ every mode, before flying with the real unit.
 - **Dynon SkyView mode** (Installation Manual §10): MODE toggles SkyView mode,
   where the autopilot is slaved to the SkyView heading / altitude / VS bugs —
   `SKYVIEW` header, `SEL` heading or `GPS` flight plan, the `ALT` bug top-right,
-  and `ALT HOLD` on capture. (Our aircraft pairs the Aerocruze with a SkyView.)
+  and `ALT HOLD` on capture.
 - A **light flight model**: actual track and altitude animate toward selected
   targets, so climbs, ALT-HOLD capture, and glideslope sequencing feel real.
-- A config panel to set conditions (GPS signal/data type, ARINC source, ground
-  speed, LPV approach, Dynon SkyView + its bugs) and induce events (trim,
-  airspeed limits, bank/AEP, sensor error).
+- A config panel with a **nav-source selector** that mirrors our aircraft's
+  panel switch — it discretely picks one source feeding the autopilot (Garmin
+  **GNS430W** → GPSS + LPV, or **Dynon SkyView**; Portable / Aspen / G5 are also
+  available). Plus GPS signal, ground speed, LPV approach, SkyView bugs, and
+  induced events (trim, airspeed limits, bank/AEP, sensor error).
 
 ## Controls
 
