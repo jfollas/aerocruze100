@@ -192,7 +192,7 @@
 }
 .lcd-elvl .elvl-svs-lbl {
   position: absolute;
-  left: calc(56% - 12px); /* clear a 4-digit SVS value on the right */
+  left: calc(56% - 18px); /* clear a 4-digit SVS value (with arrow) on the right */
   bottom: 14%;
   font-size: 30cqh;
 }
