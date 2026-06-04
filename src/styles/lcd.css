@@ -28,16 +28,17 @@
   position: absolute;
   display: flex;
   align-items: flex-start;
-  gap: 1.5cqw;
+  gap: 1cqw;
+  max-width: 48%;
 }
 
 .lcd-lbl {
-  font-size: 22cqh;
-  letter-spacing: 0.05em;
+  font-size: 20cqh;
+  letter-spacing: 0.02em;
 }
 .lcd-big {
-  font-size: 42cqh;
-  letter-spacing: 0.02em;
+  font-size: 37cqh;
+  letter-spacing: 0;
 }
 .lcd-sup {
   font-size: 20cqh;

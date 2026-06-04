@@ -201,6 +201,69 @@ describe('safety features', () => {
   })
 })
 
+describe('Dynon SkyView mode (Install Manual §10)', () => {
+  it('MODE enters SkyView mode, grabbing the SkyView bugs', () => {
+    let s = poweredOn({ skyview: 'on', svHeadingBug: 284, svAltBug: 3500, svVsBug: 500, curAlt: 1500 })
+    s = reducer(s, E.knobPress()) // engage
+    s = reducer(s, E.mode()) // enter SkyView
+    expect(s.lateralMode).toBe('SKYVIEW')
+    expect(s.selTrack).toBe(284)
+    expect(s.selAlt).toBe(3500)
+    expect(s.verticalMode).toBe('SEL') // alt bug above current -> transition
+    const d = deriveDisplay(s)
+    expect(d.topLeft.header).toBe('SKYVIEW')
+    expect(d.bottomLeft).toEqual({ label: 'SEL', value: '284' })
+    expect(d.topRight).toEqual({ label: 'ALT', value: '3500' })
+  })
+
+  it('shows GPS bottom-left when the SkyView CDI follows a flight plan', () => {
+    let s = poweredOn({ skyview: 'on', skyviewCdi: 'flightplan' })
+    s = reducer(s, E.knobPress())
+    s = reducer(s, E.mode())
+    expect(deriveDisplay(s).bottomLeft).toEqual({ text: 'GPS' })
+  })
+
+  it('the knob does nothing in SkyView mode (commands come from SkyView)', () => {
+    let s = poweredOn({ skyview: 'on', svHeadingBug: 100 })
+    s = reducer(s, E.knobPress())
+    s = reducer(s, E.mode())
+    const before = s.selTrack
+    s = reducer(s, E.knobCw())
+    expect(s.selTrack).toBe(before)
+  })
+
+  it('MODE again exits SkyView and syncs to current track and VS (§10.2 step 5)', () => {
+    let s = poweredOn({ skyview: 'on', curTrack: 160, curVS: 0 })
+    s = reducer(s, E.knobPress())
+    s = reducer(s, E.mode()) // enter
+    s = reducer(s, E.mode()) // exit
+    expect(s.lateralMode).toBe('TRK')
+    expect(s.verticalMode).toBe('SVS')
+    expect(s.selTrack).toBe(160)
+    expect(deriveDisplay(s).topLeft.header).toBe('TRK')
+  })
+
+  it('follows the VS bug when no altitude bug is set', () => {
+    let s = poweredOn({ skyview: 'on', svAltBugSet: false, svVsBug: 700 })
+    s = reducer(s, E.knobPress())
+    s = reducer(s, E.mode())
+    s = reducer(s, E.tick(0.1))
+    expect(s.verticalMode).toBe('SVS')
+    expect(s.selVS).toBe(700)
+    expect(deriveDisplay(s).topRight).toBeUndefined() // no ALT bug shown
+  })
+
+  it('drops out of SkyView if the signal is lost', () => {
+    let s = poweredOn({ skyview: 'on' })
+    s = reducer(s, E.knobPress())
+    s = reducer(s, E.mode())
+    expect(s.lateralMode).toBe('SKYVIEW')
+    s = reducer(s, E.setConfig({ skyview: 'off' }))
+    s = reducer(s, E.tick(0.1))
+    expect(s.lateralMode).toBe('TRK')
+  })
+})
+
 describe('CWS (§5.4.7)', () => {
   it('press shows CWS, release captures the new track and VS', () => {
     let s = reducer(poweredOn({ curTrack: 200 }), E.knobPress())

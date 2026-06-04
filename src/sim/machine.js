@@ -50,6 +50,14 @@ export const initialState = {
   inducedBank: 0, // for AEP demonstration while disengaged
   trim: 'none', // none | up | dn — trim annunciation (§4.3)
 
+  // Dynon SkyView interface (Installation Manual §10)
+  skyview: 'off', // off | on — a SkyView is connected and sending a signal
+  skyviewCdi: 'heading', // heading | flightplan | navaid — SkyView CDI source
+  svHeadingBug: 160, // SkyView heading bug (deg)
+  svAltBug: 3500, // SkyView altitude bug (ft)
+  svAltBugSet: true, // whether an altitude bug is set on the SkyView
+  svVsBug: 500, // SkyView vertical-speed bug (fpm)
+
   // timers (seconds)
   bootTimer: 0,
   emergencyTimer: 0,
@@ -70,7 +78,7 @@ export function lateralCycle(s) {
 
 // True when the engaged AP has no valid track and shows BANK / gyro-backup (§4.1.2, §8.3).
 export function isGyro(s) {
-  return s.apEngaged && s.gpsStatus !== 'OK' && !s.emergencyLevel
+  return s.apEngaged && s.gpsStatus !== 'OK' && !s.emergencyLevel && s.lateralMode !== 'SKYVIEW'
 }
 
 // ---- reducer ----
@@ -154,6 +162,12 @@ function keepConfig(s) {
     glideslopeFlagged: s.glideslopeFlagged,
     curTrack: s.curTrack,
     curAlt: s.curAlt,
+    skyview: s.skyview,
+    skyviewCdi: s.skyviewCdi,
+    svHeadingBug: s.svHeadingBug,
+    svAltBug: s.svAltBug,
+    svAltBugSet: s.svAltBugSet,
+    svVsBug: s.svVsBug,
   }
 }
 
@@ -162,6 +176,11 @@ function keepConfig(s) {
 function onMode(s) {
   // MODE exits any setup/sync screen back to normal (§5.1 note).
   if (s.screen !== 'NORMAL') return { ...s, screen: 'NORMAL', cursor: 'track' }
+
+  // With a SkyView connected, MODE toggles SkyView mode (Install Manual §10.2).
+  if (s.skyview === 'on') {
+    return s.lateralMode === 'SKYVIEW' ? exitSkyview(s) : enterSkyview(s)
+  }
 
   if (!s.apEngaged) {
     // Disengaged: MODE toggles AEP arming (§8.2, §9).
@@ -174,6 +193,38 @@ function onMode(s) {
   const i = cycle.indexOf(s.lateralMode)
   const next = cycle[(i + 1) % cycle.length]
   return { ...s, lateralMode: next }
+}
+
+// ---- SkyView mode (Installation Manual §10) ----
+
+// Entering grabs the current heading/altitude/VS bugs from the SkyView. With a
+// flight plan on the SkyView CDI the lateral source is GPS; otherwise it follows
+// the heading bug. Vertical follows the VS bug, or transitions to the altitude
+// bug when one is set (capturing into ALT HOLD).
+function enterSkyview(s) {
+  const climbing = s.svAltBugSet && Math.abs(s.svAltBug - s.curAlt) >= 50
+  return {
+    ...s,
+    lateralMode: 'SKYVIEW',
+    verticalMode: climbing ? 'SEL' : 'SVS',
+    selTrack: mod360(s.svHeadingBug),
+    selAlt: s.svAltBug,
+    selVS: s.svVsBug,
+    cursor: 'track',
+    aep: 'off',
+  }
+}
+
+// Exiting synchronizes to the current track and vertical speed (§10.2 step 5).
+function exitSkyview(s) {
+  return {
+    ...s,
+    lateralMode: 'TRK',
+    verticalMode: s.apEngaged ? 'SVS' : null,
+    selTrack: mod360(round(s.curTrack, 1)),
+    selVS: round(s.curVS, 100),
+    cursor: 'track',
+  }
 }
 
 // ---- ALT ----
@@ -220,6 +271,8 @@ function rotate(s, dir, fine) {
       return { ...s, selAlt: clamp(s.selAlt + dir * (fine ? 100 : 500), 0, 99000) }
     case 'NORMAL':
     default:
+      // In SkyView mode all commands come from the SkyView, not the knob (§10.2).
+      if (s.lateralMode === 'SKYVIEW') return s
       if (!s.apEngaged) return s // track select only works engaged
       // Gyro backup: knob selects bank angle, press+rotate (fine) opens trim (§8.3).
       if (isGyro(s)) {
@@ -364,6 +417,22 @@ function onTick(s, dt) {
 
   // gyro-backup derived flag
   next.gyroMode = isGyro(next)
+
+  // SkyView mode: track/altitude/VS are slaved to the SkyView bugs (§10.2).
+  if (next.lateralMode === 'SKYVIEW') {
+    if (next.skyview !== 'on') {
+      next = exitSkyview(next) // signal lost -> drop out
+    } else {
+      next = { ...next, selTrack: mod360(next.svHeadingBug), selVS: next.svVsBug, selAlt: next.svAltBug }
+      if (!next.svAltBugSet) {
+        next.verticalMode = 'SVS' // no alt bug -> follow the VS bug
+      } else if (next.verticalMode !== 'SEL' && next.verticalMode !== 'ALTHOLD') {
+        next.verticalMode = Math.abs(next.svAltBug - next.curAlt) >= 50 ? 'SEL' : 'ALTHOLD'
+      } else if (next.verticalMode === 'ALTHOLD' && Math.abs(next.svAltBug - next.curAlt) >= 50) {
+        next.verticalMode = 'SEL' // alt bug moved -> resume the transition
+      }
+    }
+  }
 
   // Emergency level reverts to TRK after ~15s (§8.1)
   if (next.emergencyLevel) {

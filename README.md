@@ -18,11 +18,15 @@ every mode, before flying with the real unit.
   Pre-Select / Vertical Approach GS ARM→CPLD→FLG), Aspen & G5 modes, CWS,
   contrast/backlight setup, and safety annunciations (Emergency Level, AEP,
   Sensor Error, Min/Max airspeed).
+- **Dynon SkyView mode** (Installation Manual §10): MODE toggles SkyView mode,
+  where the autopilot is slaved to the SkyView heading / altitude / VS bugs —
+  `SKYVIEW` header, `SEL` heading or `GPS` flight plan, the `ALT` bug top-right,
+  and `ALT HOLD` on capture. (Our aircraft pairs the Aerocruze with a SkyView.)
 - A **light flight model**: actual track and altitude animate toward selected
   targets, so climbs, ALT-HOLD capture, and glideslope sequencing feel real.
 - A config panel to set conditions (GPS signal/data type, ARINC source, ground
-  speed, LPV approach) and induce events (trim, airspeed limits, bank/AEP,
-  sensor error).
+  speed, LPV approach, Dynon SkyView + its bugs) and induce events (trim,
+  airspeed limits, bank/AEP, sensor error).
 
 ## Controls
 

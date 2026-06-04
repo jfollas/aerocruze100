@@ -9,6 +9,7 @@ const hasFlightPlan = (s) => s.gpsData === 'portable' || s.gpsData === 'ifr'
 
 // Top-left flashing GPS-quality character (§4.1.1).
 function gpsQual(s) {
+  if (s.skyview === 'on') return '+' // SkyView feeds the AP a valid data signal
   if (s.gpsStatus === 'NOGPS') return null
   let char
   if (s.arinc === 'aspen' && hasFlightPlan(s)) char = 'A+'
@@ -110,6 +111,18 @@ export function deriveDisplay(s) {
       model.bottomLeft = { header: 'SEL VS' }
       model.bottomRight = { value: String(Math.round(Math.abs(s.selVS))), arrow: arrow(s.selVS), underline: s.cursor === 'vs' }
     }
+    return model
+  }
+
+  // SkyView mode (Installation Manual §10.2). Header is SKYVIEW; lateral follows
+  // the heading bug (SEL) or a flight plan (GPS); the altitude bug shows top-right.
+  if (s.lateralMode === 'SKYVIEW') {
+    const model = { cursor: s.cursor }
+    model.topLeft = { header: 'SKYVIEW', qual: gpsQual(s) }
+    model.bottomLeft =
+      s.skyviewCdi === 'flightplan' ? { text: 'GPS' } : { label: 'SEL', value: pad(s.selTrack) }
+    if (s.svAltBugSet) model.topRight = { label: 'ALT', value: String(Math.round(s.svAltBug)) }
+    model.bottomRight = verticalZone(s)
     return model
   }
 

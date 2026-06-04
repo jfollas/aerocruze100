@@ -109,6 +109,74 @@ export default function ConfigPanel({ state, actions }) {
       </div>
 
       <div className="cfg-group">
+        <h3>Dynon SkyView</h3>
+        <Seg
+          label="Connected"
+          value={state.skyview}
+          options={[
+            { value: 'off', text: 'No' },
+            { value: 'on', text: 'Yes' },
+          ]}
+          onChange={(p) => set({ skyview: p })}
+        />
+        <Seg
+          label="CDI source"
+          value={state.skyviewCdi}
+          options={[
+            { value: 'heading', text: 'Heading bug' },
+            { value: 'flightplan', text: 'Flight plan' },
+            { value: 'navaid', text: 'VOR/LOC/ILS' },
+          ]}
+          onChange={(p) => set({ skyviewCdi: p })}
+        />
+        <div className="cfg-row">
+          <span className="cfg-label">Heading bug</span>
+          <input
+            type="range"
+            min="0"
+            max="359"
+            value={state.svHeadingBug}
+            onChange={(e) => set({ svHeadingBug: Number(e.target.value) })}
+          />
+          <span className="cfg-val">{state.svHeadingBug}°</span>
+        </div>
+        <Seg
+          label="Altitude bug"
+          value={state.svAltBugSet ? 'on' : 'off'}
+          options={[
+            { value: 'off', text: 'Not set' },
+            { value: 'on', text: 'Set' },
+          ]}
+          onChange={(p) => set({ svAltBugSet: p === 'on' })}
+        />
+        <div className="cfg-row">
+          <span className="cfg-label">Alt bug</span>
+          <input
+            type="range"
+            min="0"
+            max="17500"
+            step="100"
+            value={state.svAltBug}
+            disabled={!state.svAltBugSet}
+            onChange={(e) => set({ svAltBug: Number(e.target.value) })}
+          />
+          <span className="cfg-val">{state.svAltBug}</span>
+        </div>
+        <div className="cfg-row">
+          <span className="cfg-label">VS bug</span>
+          <input
+            type="range"
+            min="-1500"
+            max="1500"
+            step="100"
+            value={state.svVsBug}
+            onChange={(e) => set({ svVsBug: Number(e.target.value) })}
+          />
+          <span className="cfg-val">{state.svVsBug}</span>
+        </div>
+      </div>
+
+      <div className="cfg-group">
         <h3>Induce conditions</h3>
         <Seg
           label="Trim"
