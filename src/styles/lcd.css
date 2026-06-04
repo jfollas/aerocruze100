@@ -10,7 +10,7 @@
   background-image: radial-gradient(ellipse at center, #102350 0%, #07142e 100%);
   overflow: hidden;
   color: #8fb6ff;
-  font-family: 'Doto', 'Courier New', monospace;
+  font-family: 'Aerocruze LCD', 'Segoe UI', Arial, sans-serif;
   font-weight: 600;
   text-transform: uppercase;
   line-height: 1;
@@ -29,7 +29,7 @@
   display: flex;
   align-items: flex-start;
   gap: 1cqw;
-  max-width: 48%;
+  white-space: nowrap; /* never wrap an annunciation onto multiple lines */
 }
 
 .lcd-lbl {
@@ -51,6 +51,20 @@
 .lcd-underline {
   text-decoration: underline;
   text-underline-offset: 1.5cqh;
+}
+
+/* altitude with smaller hundreds (e.g. 16 + 500) */
+.lcd-alt {
+  display: inline-flex;
+  align-items: baseline;
+}
+.lcd-alt-h {
+  font-size: 27cqh;
+}
+.lcd-alt.lcd-underline {
+  text-decoration: none;
+  border-bottom: 0.5cqh solid currentColor;
+  padding-bottom: 1cqh;
 }
 
 /* header + flashing quality char stacked in a column */
@@ -83,6 +97,10 @@
 }
 .bl.annun .lcd-sup {
   align-self: flex-start;
+}
+/* the disengaged "STBY/OFF AP OFF" line spans wide — size it to fit one line */
+.bl.annun .lcd-big {
+  font-size: 30cqh;
 }
 
 /* stacked vertical annunciations (ALT/HOLD, GS/ARM) */

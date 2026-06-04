@@ -83,6 +83,21 @@ function BottomLeft({ bl, cursor }) {
   )
 }
 
+// An altitude rendered with its hundreds in a smaller size (e.g. 16500 -> "16"
+// large + "500" small), matching the device's altitude pre-select display.
+function AltValue({ value, underline }) {
+  const v = Math.round(value)
+  if (v < 1000) return <Big underline={underline}>{String(v)}</Big>
+  const thousands = Math.floor(v / 1000)
+  const hundreds = String(v % 1000).padStart(3, '0')
+  return (
+    <span className={'lcd-alt' + (underline ? ' lcd-underline' : '')}>
+      <span className="lcd-big">{thousands}</span>
+      <span className="lcd-alt-h">{hundreds}</span>
+    </span>
+  )
+}
+
 function TopRight({ tr }) {
   if (!tr) return null
   if (tr.plain) {
@@ -95,7 +110,11 @@ function TopRight({ tr }) {
   return (
     <div className="lcd-zone tr">
       {tr.label && <span className="lcd-lbl">{tr.label}</span>}
-      <Big underline={tr.underline}>{tr.value}</Big>
+      {tr.alt != null ? (
+        <AltValue value={tr.alt} underline={tr.underline} />
+      ) : (
+        <Big underline={tr.underline}>{tr.value}</Big>
+      )}
     </div>
   )
 }

@@ -1,19 +1,10 @@
-/* Doto — a dotted LED-matrix style font (bundled locally so it works offline and
-   renders Latin glyphs uniformly). Vite fingerprints these via the relative url. */
+/* Fredoka — a bold rounded sans-serif that closely matches the Aerocruze 100's
+   actual LCD font (smooth rounded characters, not a dot matrix). Bundled locally
+   so it renders consistently and works offline. */
 @font-face {
-  font-family: 'Doto';
+  font-family: 'Aerocruze LCD';
   font-style: normal;
-  font-weight: 100 900;
+  font-weight: 400 700;
   font-display: swap;
-  src: url('./fonts/doto-latin.woff2') format('woff2');
-  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
-    U+02DC, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
-}
-@font-face {
-  font-family: 'Doto';
-  font-style: normal;
-  font-weight: 100 900;
-  font-display: swap;
-  src: url('./fonts/doto-latin-ext.woff2') format('woff2');
-  unicode-range: U+0100-02BA, U+1E00-1E9F, U+2020, U+20A0-20AB, U+2113, U+2C60-2C7F, U+A720-A7FF;
+  src: url('./fonts/fredoka.woff2') format('woff2');
 }

@@ -100,12 +100,13 @@ export function deriveDisplay(s) {
     }
   }
 
-  // Altitude select / pre-select setup (§5.1, §5.4.3, §5.4.4)
+  // Altitude select / pre-select setup (§5.1, §5.4.3, §5.4.4). The selected
+  // altitude renders its hundreds in a smaller size (device convention).
   if (s.screen === 'SEL_ALT') {
     const model = {
       topLeft: { header: 'SEL ALT' },
       vertSet: true,
-      topRight: { value: String(Math.round(s.selAlt)), underline: s.cursor === 'altSel' },
+      topRight: { alt: Math.round(s.selAlt), underline: s.cursor === 'altSel' },
     }
     if (s.apEngaged) {
       model.bottomLeft = { header: 'SEL VS' }
