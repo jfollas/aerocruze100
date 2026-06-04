@@ -155,8 +155,8 @@
    header. This is the standard position for all vertical text. */
 .lcd-vertset {
   position: absolute;
-  left: 55%;
-  top: calc(8% + 3px);
+  left: 52%;
+  top: calc(8% + 7px);
   display: flex;
   flex-direction: column;
   align-items: center;
