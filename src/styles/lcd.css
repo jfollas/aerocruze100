@@ -69,16 +69,20 @@
   padding-bottom: 1cqh;
 }
 
-/* SEL ALT view tweaks: larger labels, slightly smaller altitude digits, and
-   a wider right margin so the value clears the bezel. */
+/* SEL ALT view tweaks: larger labels, smaller altitude digits, and inset
+   margins so the values clear the bezel. */
+.lcd-sel-alt {
+  --alt-h: 31.5cqh; /* 100s (hundreds) size */
+  --alt-step: 3cqh; /* one font-size step */
+}
 .lcd-sel-alt .lcd-lbl {
   font-size: 30cqh; /* SEL ALT / SEL VS labels, 1.5x */
 }
-.lcd-sel-alt .lcd-alt-k {
-  font-size: 42.5cqh; /* thousands, -15% */
-}
 .lcd-sel-alt .lcd-alt .lcd-big {
-  font-size: 31.5cqh; /* hundreds, -15% */
+  font-size: var(--alt-h); /* hundreds */
+}
+.lcd-sel-alt .lcd-alt-k {
+  font-size: calc(var(--alt-h) + 2 * var(--alt-step)); /* thousands: 2 steps above the hundreds */
 }
 .lcd-sel-alt .tr,
 .lcd-sel-alt .br {
@@ -87,6 +91,10 @@
 .lcd-sel-alt .tl,
 .lcd-sel-alt .bl {
   left: calc(3% + 10px);
+}
+.lcd-sel-alt .tl,
+.lcd-sel-alt .tr {
+  top: calc(8% + 3px); /* extra top margin */
 }
 
 /* header + flashing quality char stacked in a column */
