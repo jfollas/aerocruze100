@@ -7,14 +7,17 @@ import { isGyro } from './machine.js'
 const pad = (n) => String(Math.round(n)).padStart(3, '0')
 const hasFlightPlan = (s) => s.gpsData === 'portable' || s.gpsData === 'ifr'
 
-// Top-left flashing GPS-quality character (§4.1.1).
+// Top-left flashing GPS-quality character (§4.1.1). A bare "+" is rendered with
+// a leading space (" +") so the "+" glyph lands in the same column whether
+// or not there's an "A"/"E" source prefix (A+ / E+).
+const PLUS = ' +' // leading non-breaking space keeps "+" aligned with A+/E+
 function gpsQual(s) {
-  if (s.skyview === 'on') return '+' // SkyView feeds the AP a valid data signal
+  if (s.skyview === 'on') return PLUS // SkyView feeds the AP a valid data signal
   if (s.gpsStatus === 'NOGPS') return null
   let char
   if (s.arinc === 'aspen' && hasFlightPlan(s)) char = 'A+'
   else if (s.arinc === 'g5' && hasFlightPlan(s)) char = 'E+'
-  else if (hasFlightPlan(s)) char = '+'
+  else if (hasFlightPlan(s)) char = PLUS
   else if (s.gpsStatus === 'OK') char = '*'
   else if (s.gpsStatus === 'NOFIX') char = '.'
   else return null
