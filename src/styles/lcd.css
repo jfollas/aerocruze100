@@ -160,7 +160,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  font-size: 22cqh; /* two steps below the 30cqh label */
+  font-size: 26cqh; /* one step below the 30cqh label (was 2 steps) */
   line-height: 0.78; /* tight vertical character spacing */
 }
 
