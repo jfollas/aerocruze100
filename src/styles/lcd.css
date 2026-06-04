@@ -149,6 +149,7 @@
 }
 .lcd-home .lcd-qual-fixed.q-dot {
   left: 12%;
+  top: calc(8% - 5px + var(--label)); /* period sits low — raise it 4px */
 }
 
 /* header + flashing quality char stacked in a column */
