@@ -170,8 +170,10 @@ export default function LcdDisplay({ state }) {
     )
   }
 
-  // Emergency level (§8.1): BANK + large bottom-aligned bank angle, SVS + value.
+  // BANK + bank angle + vertical (SVS / ALT HOLD ...). Shared by emergency level
+  // (§8.1) and the gyro-backup / no-GPS engaged screen (§4.1.2, §8.3).
   if (d.elvl) {
+    const v = d.elvl.vert
     return (
       <div className="lcd lcd-elvl">
         <div className="elvl-bank">
@@ -181,8 +183,19 @@ export default function LcdDisplay({ state }) {
           </span>
           <span className="elvl-deg lcd-underline">{d.elvl.bank}</span>
         </div>
-        <span className="elvl-svs-lbl">{d.elvl.svsLabel}</span>
-        <span className="elvl-svs">{d.elvl.svs}</span>
+        {v.stacked ? (
+          <span className="elvl-vert-stacked">
+            <Stacked words={v.stacked} />
+          </span>
+        ) : (
+          <>
+            <span className="elvl-svs-lbl">{v.label}</span>
+            <span className="elvl-svs">
+              {v.value}
+              {v.arrow}
+            </span>
+          </>
+        )}
       </div>
     )
   }

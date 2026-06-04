@@ -169,8 +169,7 @@ describe('safety features', () => {
     expect(s.verticalMode).toBe('SVS')
     expect(s.selVS).toBe(0)
     const d = deriveDisplay(s)
-    expect(d.elvl.svsLabel).toBe('SVS')
-    expect(d.elvl.svs).toBe('0')
+    expect(d.elvl.vert).toEqual({ label: 'SVS', value: '0', arrow: '' })
     for (let i = 0; i < 40; i++) s = reducer(s, E.tick(0.5))
     expect(s.emergencyLevel).toBe(false)
     expect(s.lateralMode).toBe('TRK')
@@ -208,7 +207,10 @@ describe('safety features', () => {
     s = reducer(s, E.knobPress())
     s = reducer(s, E.tick(0.1))
     expect(s.gyroMode).toBe(true)
-    expect(deriveDisplay(s).topLeft.header).toBe('BANK')
+    // gyro backup uses the shared BANK + SVS (elvl) layout
+    const d = deriveDisplay(s)
+    expect(d.elvl).toBeTruthy()
+    expect(d.elvl.bank).toContain('°')
   })
 })
 

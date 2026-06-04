@@ -194,6 +194,18 @@
   bottom: 18%; /* bumped up to leave room for the cursor underline */
   font-size: 30cqh;
 }
+/* gyro-backup may show a stacked vertical (e.g. ALT HOLD) instead of SVS */
+.lcd-elvl .elvl-vert-stacked {
+  position: absolute;
+  right: calc(3% + 10px);
+  bottom: 10%;
+}
+.lcd-elvl .elvl-vert-stacked .lcd-big {
+  font-size: 30cqh;
+}
+.lcd-elvl .elvl-vert-stacked .lcd-sup {
+  font-size: 20cqh;
+}
 
 /* header + flashing quality char stacked in a column */
 .lcd-headcol {

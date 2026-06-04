@@ -26,7 +26,7 @@ const arrow = (vs) => (vs > 0 ? '↑' : vs < 0 ? '↓' : '')
 // Bottom-right vertical annunciation for the engaged operating screen.
 function verticalZone(s) {
   if (s.warning === 'MIN_AS' || s.warning === 'MAX_AS') {
-    // SYS stays on the bottom-right; the warning sits top-right (handled below).
+    // SVS stays on the bottom-right; the warning sits top-right (handled below).
   }
   switch (s.verticalMode) {
     case 'ALTHOLD':
@@ -40,7 +40,7 @@ function verticalZone(s) {
     case 'SEL':
     case 'SVS':
     default:
-      return { label: 'SYS', value: String(Math.round(Math.abs(s.selVS))), arrow: arrow(s.selVS) }
+      return { label: 'SVS', value: String(Math.round(Math.abs(s.selVS))), arrow: arrow(s.selVS) }
   }
 }
 
@@ -97,7 +97,7 @@ export function deriveDisplay(s) {
     return {
       topLeft: { header: 'TRIM', qual: gpsQual(s) },
       bigValue: `${s.gyroTrim.toFixed(1)}°/MIN`,
-      bottomRight: { label: 'SYS', value: '0' },
+      bottomRight: { label: 'SVS', value: '0' },
     }
   }
 
@@ -150,26 +150,17 @@ export function deriveDisplay(s) {
     return model
   }
 
-  // Engaged
+  // Engaged. The BANK + SVS layout is shared by emergency level (§8.1) and the
+  // gyro-backup screen when engaged without a valid GPS (§4.1.2, §8.3).
   if (s.emergencyLevel) {
-    // Emergency level (§8.1): BANK with a large bottom-aligned bank angle, and SVS.
     const b = Math.round(Math.abs(s.bankAngle))
     const side = s.bankAngle > 1 ? 'R' : s.bankAngle < -1 ? 'L' : ''
-    return {
-      elvl: {
-        qual: gpsQual(s),
-        bank: `${b}°${side}`,
-        svsLabel: 'SVS',
-        svs: String(Math.round(Math.abs(s.selVS))),
-      },
-    }
+    return { elvl: { qual: gpsQual(s), bank: `${b}°${side}`, vert: verticalZone(s) } }
   }
   if (isGyro(s)) {
     const b = Math.round(Math.abs(s.selBank))
     const side = s.selBank > 0 ? 'R' : s.selBank < 0 ? 'L' : ''
-    model.topLeft = { header: 'BANK', qual: gpsQual(s), value: `${b}°${side}` }
-    model.bottomRight = verticalZone(s)
-    return model
+    return { elvl: { qual: gpsQual(s), bank: `${b}°${side}`, vert: verticalZone(s) } }
   }
 
   model.topLeft = { header: 'TRK', qual: gpsQual(s), value: pad(s.curTrack), trim: s.trim }
