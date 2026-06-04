@@ -66,8 +66,18 @@
 }
 .lcd-alt.lcd-underline {
   text-decoration: none;
-  border-bottom: 3cqh solid currentColor; /* matches the text underline thickness */
-  padding-bottom: 0; /* underline tight against the digits on SEL ALT */
+  position: relative;
+}
+/* underline drawn as a bar so it can be thicker and pulled up into the digits
+   (CSS padding can't go negative) */
+.lcd-alt.lcd-underline::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 2cqh; /* pulled up toward the digits */
+  height: 4cqh; /* slightly thicker than the 3cqh text underline */
+  background: currentColor;
 }
 
 /* SEL ALT & ALT SYNC share a larger label and a little extra top margin. */
