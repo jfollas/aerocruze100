@@ -33,7 +33,7 @@
   --fs-setting: 34cqh; /* contrast / min-backlight value */
   --fs-big: 37cqh; /* generic large value (SVS, GPS NAV, …) */
   --fs-value: 42cqh; /* large numeric value: bank angle */
-  --fs-heading: calc(var(--fs-value) + var(--fs-step)); /* TRK / SEL heading digits, one step above the bank value */
+  --fs-heading: calc(var(--fs-value) - var(--fs-step)); /* TRK / SEL heading digits — sized down to tighten the 3-digit width */
   --fs-thousands: 50cqh; /* large thousands on the default altitude rendering */
 }
 
