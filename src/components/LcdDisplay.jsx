@@ -8,6 +8,9 @@ function Qual({ char }) {
   return <span className="lcd-qual lcd-flash">{char}</span>
 }
 
+// per-symbol class so the GPS signal indicator can be placed individually
+const qualSym = (char) => (char.includes('+') ? 'q-plus' : char === '*' ? 'q-star' : 'q-dot')
+
 function Big({ children, underline }) {
   return <span className={'lcd-big' + (underline ? ' lcd-underline' : '')}>{children}</span>
 }
@@ -33,13 +36,13 @@ function VertSet() {
   )
 }
 
-function TopLeft({ tl }) {
+function TopLeft({ tl, suppressQual }) {
   if (!tl) return null
   return (
     <div className="lcd-zone tl">
       <span className="lcd-headcol">
         <span className="lcd-lbl">{tl.header}</span>
-        <Qual char={tl.qual} />
+        {!suppressQual && <Qual char={tl.qual} />}
       </span>
       {tl.value != null && <Big>{tl.value}</Big>}
       {tl.trim && tl.trim !== 'none' && (
@@ -183,9 +186,16 @@ export default function LcdDisplay({ state }) {
     )
   }
 
+  // On the home screen the GPS signal indicator is placed at a fixed position
+  // (per symbol), independent of the header, rather than flowing under it.
+  const homeQual = d.klass === 'lcd-home' ? d.topLeft?.qual : null
+
   return (
     <div className={'lcd' + (d.klass ? ' ' + d.klass : '')}>
-      <TopLeft tl={d.topLeft} />
+      <TopLeft tl={d.topLeft} suppressQual={!!homeQual} />
+      {homeQual && (
+        <span className={'lcd-qual lcd-flash lcd-qual-fixed ' + qualSym(homeQual)}>{homeQual}</span>
+      )}
       {d.vertSet && <VertSet />}
       <BottomLeft bl={d.bottomLeft} cursor={d.cursor} />
       <TopRight tr={d.topRight} />

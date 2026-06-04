@@ -121,17 +121,33 @@
 }
 .lcd-home .tl {
   top: calc(8% + 3px); /* same top margin as SEL ALT */
+  left: calc(3% + 12px); /* top line nudged right 2px */
 }
 .lcd-home .bl {
-  bottom: calc(8% + 3px); /* bottom margin matches SEL ALT's top margin */
+  bottom: 8%; /* bottom row dropped 3px (was 8% + 3px) */
 }
 .lcd-home .bl.annun .lcd-sup {
   font-size: var(--label); /* AEP, same size as the header */
   position: relative;
   top: -7px; /* AEP sits ~7px higher */
+  left: -3px; /* AEP nudged left 3px */
 }
 .lcd-home .bl.annun .lcd-big {
   font-size: calc(var(--label) + 2 * var(--step)); /* STBY/OFF AP OFF, 2 steps larger */
+}
+/* GPS signal indicator: fixed position on the home screen, per symbol */
+.lcd-home .lcd-qual-fixed {
+  position: absolute;
+  top: calc(8% + 3px + var(--label)); /* just below the header */
+}
+.lcd-home .lcd-qual-fixed.q-plus {
+  left: 10%;
+}
+.lcd-home .lcd-qual-fixed.q-star {
+  left: 15%;
+}
+.lcd-home .lcd-qual-fixed.q-dot {
+  left: 10%;
 }
 
 /* header + flashing quality char stacked in a column */
