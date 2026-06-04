@@ -45,36 +45,53 @@ function Seg({ label, value, options, onChange }) {
 
 export default function ConfigPanel({ state, actions }) {
   const set = actions.setConfig
-  const on = state.power === 'on'
+  const on = state.power === 'on' // fully powered (CWS / LEVEL available)
+  const powerUp = state.power !== 'off' // switch position (up while booting too)
   return (
     <div className="config">
       <div className="cfg-group">
         <h3>Aircraft master</h3>
-        <Seg
-          label="Power"
-          value={state.power === 'off' ? 'off' : 'on'}
-          options={[
-            { value: 'off', text: 'OFF' },
-            { value: 'on', text: 'ON' },
-          ]}
-          onChange={(p) => set({ power: p })}
-        />
-        <div className="cfg-row">
-          <span className="cfg-label">Yoke switches</span>
-          <div className="cfg-seg">
+        <div className="master-panel">
+          <div className="master-ctl">
             <button
-              className="cfg-opt"
+              className="cws-btn"
               disabled={!on}
               onPointerDown={actions.cwsPress}
               onPointerUp={actions.cwsRelease}
               onPointerLeave={actions.cwsRelease}
+              aria-label="Control Wheel Steering — hold to maneuver"
               title="Control Wheel Steering — hold to maneuver"
+            />
+            <span className="master-cap">CWS</span>
+          </div>
+
+          <div className="master-ctl">
+            <button
+              className={'power-toggle' + (powerUp ? ' on' : '')}
+              role="switch"
+              aria-checked={powerUp}
+              aria-label="Power master switch"
+              title="Power — flip up for ON, down for OFF"
+              onClick={() => set({ power: powerUp ? 'off' : 'on' })}
             >
-              CWS (hold)
+              <span className="toggle-track">
+                <span className="toggle-lever" />
+              </span>
             </button>
-            <button className="cfg-opt" disabled={!on} onClick={actions.apLvl} title="Emergency Level">
-              AP&nbsp;LVL
+            <span className="master-cap">PWR · {powerUp ? 'ON' : 'OFF'}</span>
+          </div>
+
+          <div className="master-ctl">
+            <button
+              className="level-btn"
+              disabled={!on}
+              onClick={actions.apLvl}
+              aria-label="Emergency Level"
+              title="Emergency Level"
+            >
+              LEVEL
             </button>
+            <span className="master-cap">LEVEL</span>
           </div>
         </div>
       </div>
