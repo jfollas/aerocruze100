@@ -149,7 +149,7 @@ export default function LcdDisplay({ state }) {
   // Full-screen templates (boot, sensor error, AEP active)
   if (d.full) {
     return (
-      <div className={'lcd' + (d.flashing ? ' lcd-flash' : '')}>
+      <div className={'lcd' + (d.klass ? ' ' + d.klass : '') + (d.flashing ? ' lcd-flash' : '')}>
         {d.header && <div className="lcd-zone tl"><span className="lcd-lbl">{d.header}</span></div>}
         <div className="lcd-full">
           {d.full.map((line, i) => (

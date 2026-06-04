@@ -18,7 +18,7 @@ describe('power up', () => {
   it('boots then shows AP OFF on the normal screen', () => {
     let s = reducer(initialState, E.setConfig({ power: 'on' }))
     expect(s.power).toBe('booting')
-    expect(deriveDisplay(s).full).toEqual(['VIZION 380 VZ.5'])
+    expect(deriveDisplay(s).full).toEqual(['AEROCRUZE 100'])
     s = reducer(s, E.tick(3))
     expect(s.power).toBe('on')
     expect(s.apEngaged).toBe(false)

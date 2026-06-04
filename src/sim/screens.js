@@ -66,7 +66,7 @@ export function deriveDisplay(s) {
   if (s.power === 'off') return { off: true }
 
   if (s.power === 'booting') {
-    return { header: 'NO GPS', full: ['VIZION 380 VZ.5'] }
+    return { klass: 'lcd-home', header: 'NO GPS', full: ['AEROCRUZE 100'] }
   }
 
   if (s.warning === 'SENSOR') {
