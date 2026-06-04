@@ -163,12 +163,14 @@ describe('vertical approach (§5.4.5, §5.4.6)', () => {
 })
 
 describe('safety features', () => {
-  it('AP LVL engages emergency level (BANK 0°, SYS 0) and reverts to TRK (§8.1)', () => {
+  it('AP LVL engages emergency level (BANK, SVS) and reverts to TRK (§8.1)', () => {
     let s = reducer(poweredOn({ curTrack: 90 }), E.apLvl())
     expect(s.emergencyLevel).toBe(true)
     expect(s.verticalMode).toBe('SVS')
     expect(s.selVS).toBe(0)
-    expect(deriveDisplay(s).topLeft.header).toBe('BANK')
+    const d = deriveDisplay(s)
+    expect(d.elvl.svsLabel).toBe('SVS')
+    expect(d.elvl.svs).toBe('0')
     for (let i = 0; i < 40; i++) s = reducer(s, E.tick(0.5))
     expect(s.emergencyLevel).toBe(false)
     expect(s.lateralMode).toBe('TRK')

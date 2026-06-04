@@ -170,6 +170,23 @@ export default function LcdDisplay({ state }) {
     )
   }
 
+  // Emergency level (§8.1): BANK + large bottom-aligned bank angle, SVS + value.
+  if (d.elvl) {
+    return (
+      <div className="lcd lcd-elvl">
+        <div className="elvl-bank">
+          <span className="lcd-headcol">
+            <span className="lcd-lbl">BANK</span>
+            <Qual char={d.elvl.qual} />
+          </span>
+          <span className="elvl-deg lcd-underline">{d.elvl.bank}</span>
+        </div>
+        <span className="elvl-svs-lbl">{d.elvl.svsLabel}</span>
+        <span className="elvl-svs">{d.elvl.svs}</span>
+      </div>
+    )
+  }
+
   // Setting screens (contrast / min backlight / setup)
   if (d.setting) {
     return (

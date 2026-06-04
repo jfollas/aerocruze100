@@ -163,6 +163,38 @@
   top: calc(8% - 5px + var(--label)); /* period sits low — raise it 4px */
 }
 
+/* Emergency level (§8.1): BANK at the top-left with a large bottom-aligned bank
+   angle centered under it; SVS label + value on the right. */
+.lcd-elvl .elvl-bank {
+  position: absolute;
+  left: 10%;
+  top: calc(8% + 3px);
+  bottom: 8%;
+  display: flex;
+  flex-direction: column;
+  align-items: center; /* bank angle centered under BANK */
+}
+.lcd-elvl .elvl-bank .lcd-lbl {
+  font-size: 30cqh; /* BANK, same as SEL ALT */
+}
+.lcd-elvl .elvl-deg {
+  margin-top: auto; /* bottom-aligned */
+  font-size: 42cqh; /* large number */
+  line-height: 1;
+}
+.lcd-elvl .elvl-svs-lbl {
+  position: absolute;
+  left: 56%;
+  bottom: 14%;
+  font-size: 30cqh;
+}
+.lcd-elvl .elvl-svs {
+  position: absolute;
+  right: calc(3% + 10px);
+  bottom: 18%; /* bumped up to leave room for the cursor underline */
+  font-size: 30cqh;
+}
+
 /* header + flashing quality char stacked in a column */
 .lcd-headcol {
   display: flex;

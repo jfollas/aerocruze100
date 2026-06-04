@@ -152,9 +152,17 @@ export function deriveDisplay(s) {
 
   // Engaged
   if (s.emergencyLevel) {
-    model.topLeft = { header: 'BANK', qual: gpsQual(s), value: '0°' }
-    model.bottomRight = { label: 'SYS', value: '0' }
-    return model
+    // Emergency level (§8.1): BANK with a large bottom-aligned bank angle, and SVS.
+    const b = Math.round(Math.abs(s.bankAngle))
+    const side = s.bankAngle > 1 ? 'R' : s.bankAngle < -1 ? 'L' : ''
+    return {
+      elvl: {
+        qual: gpsQual(s),
+        bank: `${b}°${side}`,
+        svsLabel: 'SVS',
+        svs: String(Math.round(Math.abs(s.selVS))),
+      },
+    }
   }
   if (isGyro(s)) {
     const b = Math.round(Math.abs(s.selBank))
