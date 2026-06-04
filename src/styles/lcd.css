@@ -39,6 +39,7 @@
 .lcd-big {
   font-size: 37cqh;
   letter-spacing: 0;
+  word-spacing: -0.5ch; /* tighten multi-word values (e.g. STBY AP OFF, GPS NAV) */
 }
 .lcd-sup {
   font-size: 20cqh;
@@ -108,6 +109,28 @@
   font-size: calc(var(--alt-h) + 2 * var(--step)); /* thousands */
 }
 
+/* Disengaged home screen (NO GPS / NO FIX / GPS OK). */
+.lcd-home {
+  --label: 30cqh;
+  --step: 4cqh;
+}
+.lcd-home .lcd-lbl {
+  font-size: var(--label); /* NO GPS header, same as SEL ALT */
+}
+.lcd-home .tl {
+  top: calc(8% + 3px); /* same top margin as SEL ALT */
+}
+.lcd-home .bl {
+  bottom: calc(8% + 3px); /* bottom margin matches SEL ALT's top margin */
+}
+.lcd-home .bl.annun .lcd-sup {
+  font-size: var(--label); /* AEP, same size as the header */
+  position: relative;
+  top: -6px; /* AEP sits ~6px higher */
+}
+.lcd-home .bl.annun .lcd-big {
+  font-size: calc(var(--label) + 2 * var(--step)); /* STBY/OFF AP OFF, 2 steps larger */
+}
 
 /* header + flashing quality char stacked in a column */
 .lcd-headcol {

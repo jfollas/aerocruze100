@@ -137,10 +137,13 @@ export function deriveDisplay(s) {
       model.topLeft = { header: 'TRK', qual: gpsQual(s), value: pad(s.curTrack), trim: s.trim }
     } else if (s.gpsStatus === 'OK') {
       model.topLeft = { header: 'GPS OK', qual: gpsQual(s) }
+      model.klass = 'lcd-home'
     } else if (s.gpsStatus === 'NOFIX') {
       model.topLeft = { header: 'NO FIX', qual: gpsQual(s) }
+      model.klass = 'lcd-home'
     } else {
       model.topLeft = { header: 'NO GPS' }
+      model.klass = 'lcd-home'
     }
     // Disengaged bottom row: AEP arming + AP OFF (§4.1.1, §8.2)
     model.bottomLeft = { aep: s.aep === 'stby' ? 'STBY' : 'OFF', apOff: true }
