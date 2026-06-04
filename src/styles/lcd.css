@@ -175,6 +175,7 @@
   --label: 30cqh; /* TRK / SEL / SVS / ALT labels, same as SEL ALT */
   --step: 4cqh;
   --alt-h: 22cqh; /* SEL-altitude hundreds (smaller, raised) */
+  --rlabel-left: calc(58.3% - 12px); /* left of the right-side label column (SEL/ALT) */
 }
 .lcd-op .lcd-lbl {
   font-size: var(--label);
@@ -191,27 +192,41 @@
 .lcd-op .lcd-head-val {
   font-size: 42cqh;
 }
-/* SEL altitude top-right: large thousands + smaller, top-aligned hundreds */
-.lcd-op .tr .lcd-alt .lcd-big {
+/* SEL altitude top-right: SEL label fixed at the right-column left; value
+   right-aligned with large thousands + smaller, top-aligned hundreds. */
+.lcd-op .op-sel-lbl {
+  position: absolute;
+  left: var(--rlabel-left);
+  top: calc(8% + 3px);
+  font-size: var(--label);
+}
+.lcd-op .op-sel-val {
+  position: absolute;
+  right: calc(3% + 10px);
+  top: calc(8% + 3px);
+  display: inline-flex;
+  align-items: flex-start;
+}
+.lcd-op .op-sel-val .lcd-alt .lcd-big {
   font-size: var(--alt-h);
 }
-.lcd-op .tr .lcd-alt-k {
+.lcd-op .op-sel-val .lcd-alt-k {
   font-size: calc(var(--alt-h) + 2 * var(--step));
 }
-/* stacked annunciations (ALT HOLD, GS ARM/CPLD/FLG): both words at the TRK/SEL
-   label size, with the first word a superscript tucked to the upper-left of the
-   second, fixed at the same left as the SEL altitude label above it. */
-.lcd-op .op-annun {
+/* stacked annunciations (ALT HOLD, GS ARM/CPLD/FLG): first word (ALT/GS) is a
+   raised label at the right-column left (same left as the SEL label above it);
+   second word (HOLD/ARM/…) is right-aligned. */
+.lcd-op .op-annun-sup {
   position: absolute;
-  left: 58.3%; /* matches the top-right SEL label left */
+  left: var(--rlabel-left);
+  bottom: calc(8% + 0.5em); /* raised half a character height */
+  font-size: var(--label);
+}
+.lcd-op .op-annun-word {
+  position: absolute;
+  right: calc(3% + 10px);
   bottom: 8%;
   font-size: var(--label);
-  white-space: nowrap;
-  line-height: 1;
-}
-.lcd-op .op-annun-sup {
-  position: relative;
-  top: -0.5em; /* raised half a character height (superscript) */
 }
 /* SVS: fixed label + right-aligned value (fits a 4-digit value), same as the
    level/emergency screen */

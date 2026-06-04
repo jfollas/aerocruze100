@@ -245,16 +245,30 @@ export default function LcdDisplay({ state }) {
       )}
       {d.vertSet && <VertSet />}
       <BottomLeft bl={d.bottomLeft} cursor={d.cursor} />
-      <TopRight tr={d.topRight} />
+      {d.klass === 'lcd-op' && d.topRight && !d.topRight.plain ? (
+        // SEL altitude: label fixed at the right-column left, value right-aligned.
+        <>
+          {d.topRight.label && <span className="lcd-lbl op-sel-lbl">{d.topRight.label}</span>}
+          <span className="op-sel-val">
+            {d.topRight.alt != null ? (
+              <AltValue value={d.topRight.alt} underline={d.topRight.underline} />
+            ) : (
+              <Big underline={d.topRight.underline}>{d.topRight.value}</Big>
+            )}
+          </span>
+        </>
+      ) : (
+        <TopRight tr={d.topRight} />
+      )}
       {d.klass === 'lcd-op' && d.bottomRight ? (
         d.bottomRight.stacked ? (
-          // ALT HOLD / GS ARM / GS CPLD / GS FLG: the first word is a superscript
-          // tucked to the upper-left of the second word, sharing the SEL-label
-          // left of the altitude above it (e.g. "ᴬᴸᵀHOLD").
-          <span className="op-annun">
+          // ALT HOLD / GS ARM / GS CPLD / GS FLG: the first word (ALT/GS) is a
+          // raised label at the right-column left (sharing the SEL-label left of
+          // the altitude above it); the second word is right-aligned.
+          <>
             <span className="op-annun-sup">{d.bottomRight.stacked[0]}</span>
-            {d.bottomRight.stacked[1]}
-          </span>
+            <span className="op-annun-word">{d.bottomRight.stacked[1]}</span>
+          </>
         ) : (
           // SVS: fixed label + right-aligned value so the label stays put for a
           // 2- to 4-digit value (as on the level screen).
