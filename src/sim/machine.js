@@ -113,6 +113,8 @@ export function reducer(state, event) {
       return onKnobPress(state)
     case E.KNOB_HOLD:
       return state.apEngaged ? disengage(state) : state
+    case E.CWS_TAP:
+      return state.apEngaged ? disengage(state) : state // a tap disengages (§5.2.2)
     case E.CWS_PRESS:
       return state.apEngaged ? { ...state, cwsHeld: true } : state
     case E.CWS_RELEASE:

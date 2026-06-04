@@ -1,4 +1,7 @@
+import { useRef } from 'react'
 import '../styles/config.css'
+
+const CWS_HOLD_MS = 350 // held longer than this => CWS mode; shorter => a tap (disengage)
 
 // The autopilot accepts one nav source at a time. In our aircraft a panel
 // selector switch discretely picks between the Dynon SkyView and the Garmin
@@ -47,6 +50,30 @@ export default function ConfigPanel({ state, actions }) {
   const set = actions.setConfig
   const on = state.power === 'on' // fully powered (CWS / LEVEL available)
   const powerUp = state.power !== 'off' // switch position (up while booting too)
+
+  // CWS: a quick tap disengages the AP; holding enters CWS mode (release resumes).
+  const cws = useRef({ down: false, holding: false, timer: null })
+  const cwsDown = (e) => {
+    e.currentTarget.setPointerCapture?.(e.pointerId)
+    cws.current.down = true
+    cws.current.holding = false
+    cws.current.timer = setTimeout(() => {
+      cws.current.holding = true
+      actions.cwsPress()
+    }, CWS_HOLD_MS)
+  }
+  const cwsUp = () => {
+    if (!cws.current.down) return
+    cws.current.down = false
+    clearTimeout(cws.current.timer)
+    if (cws.current.holding) {
+      actions.cwsRelease()
+      cws.current.holding = false
+    } else {
+      actions.cwsTap()
+    }
+  }
+
   return (
     <div className="config">
       <div className="cfg-group">
@@ -56,11 +83,11 @@ export default function ConfigPanel({ state, actions }) {
             <button
               className="cws-btn"
               disabled={!on}
-              onPointerDown={actions.cwsPress}
-              onPointerUp={actions.cwsRelease}
-              onPointerLeave={actions.cwsRelease}
-              aria-label="Control Wheel Steering — hold to maneuver"
-              title="Control Wheel Steering — hold to maneuver"
+              onPointerDown={cwsDown}
+              onPointerUp={cwsUp}
+              onPointerCancel={cwsUp}
+              aria-label="Control Wheel Steering — tap to disengage, hold to maneuver"
+              title="CWS — tap to disengage the autopilot; hold to maneuver, release to resume"
             />
             <span className="master-cap">CWS</span>
           </div>

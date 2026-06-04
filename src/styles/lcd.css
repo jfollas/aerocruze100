@@ -135,9 +135,9 @@
 .lcd-home .bl.annun .lcd-big {
   font-size: calc(var(--label) + 2 * var(--step)); /* STBY/OFF AP OFF, 2 steps larger */
 }
-/* AP OFF anchored to the right (independent of the AEP state on the left), with
-   a little extra right margin so it isn't tight against the edge. */
-.lcd-home .bl-apoff {
+/* AP OFF anchored to the right (independent of the AEP state on the left) on any
+   disengaged screen, so it stays put when AEP toggles STBY/OFF. */
+.bl-apoff {
   position: absolute;
   right: calc(3% + 10px); /* universal right margin */
   bottom: 8%;

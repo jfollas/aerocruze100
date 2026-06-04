@@ -273,8 +273,15 @@ describe('Dynon SkyView mode (Install Manual §10)', () => {
   })
 })
 
-describe('CWS (§5.4.7)', () => {
-  it('press shows CWS, release captures the new track and VS', () => {
+describe('CWS (§5.2.2, §5.4.7)', () => {
+  it('a tap disengages the autopilot (§5.2.2)', () => {
+    let s = reducer(poweredOn(), E.knobPress())
+    expect(s.apEngaged).toBe(true)
+    s = reducer(s, E.cwsTap())
+    expect(s.apEngaged).toBe(false)
+  })
+
+  it('hold shows CWS, release captures the new track and VS (§5.4.7)', () => {
     let s = reducer(poweredOn({ curTrack: 200 }), E.knobPress())
     s = reducer(s, E.cwsPress())
     expect(s.cwsHeld).toBe(true)

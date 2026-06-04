@@ -23,6 +23,7 @@ export default function App() {
       rotate: (dir, fine) => dispatch(dir > 0 ? E.knobCw(fine) : E.knobCcw(fine)),
       knobPress: () => dispatch(E.knobPress()),
       knobHold: () => dispatch(E.knobHold()),
+      cwsTap: () => dispatch(E.cwsTap()),
       cwsPress: () => dispatch(E.cwsPress()),
       cwsRelease: () => dispatch(E.cwsRelease()),
       apLvl: () => dispatch(E.apLvl()),
