@@ -55,10 +55,13 @@ function TopLeft({ tl, suppressQual }) {
 function BottomLeft({ bl, cursor }) {
   if (!bl) return null
   if (bl.apOff) {
+    // AEP + its state (STBY/OFF) on the left; AP OFF fixed on the right via a
+    // fixed-width state slot, so AP OFF doesn't move when STBY <-> OFF toggles.
     return (
       <div className="lcd-zone bl annun">
         <span className="lcd-sup">AEP</span>
-        <Big>{`${bl.aep} AP OFF`}</Big>
+        <span className="lcd-big aep-state">{bl.aep}</span>
+        <Big>AP OFF</Big>
       </div>
     )
   }
