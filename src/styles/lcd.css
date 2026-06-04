@@ -138,16 +138,17 @@
 /* GPS signal indicator: fixed position on the home screen, per symbol */
 .lcd-home .lcd-qual-fixed {
   position: absolute;
-  top: calc(8% + 3px + var(--label)); /* just below the header */
+  top: calc(8% + 1px + var(--label)); /* just below the header, nudged up 2px */
+  font-size: calc(20cqh + var(--step)); /* one step larger (24cqh) */
 }
 .lcd-home .lcd-qual-fixed.q-plus {
-  left: 10%;
+  left: 12%;
 }
 .lcd-home .lcd-qual-fixed.q-star {
-  left: 15%;
+  left: 17%;
 }
 .lcd-home .lcd-qual-fixed.q-dot {
-  left: 10%;
+  left: 12%;
 }
 
 /* header + flashing quality char stacked in a column */

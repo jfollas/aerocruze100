@@ -92,8 +92,14 @@ export default function App() {
       </main>
 
       <footer className="app-foot">
-        Keyboard: <kbd>M</kbd> mode · <kbd>A</kbd> alt · <kbd>←</kbd>/<kbd>→</kbd> twist (<kbd>Shift</kbd> = fine) ·
-        <kbd>Enter</kbd> press · <kbd>Backspace</kbd> hold/disengage. For training only — not for navigation.
+        <p>
+          Keyboard: <kbd>M</kbd> mode · <kbd>A</kbd> alt · <kbd>←</kbd>/<kbd>→</kbd> twist (<kbd>Shift</kbd> = fine) ·
+          <kbd>Enter</kbd> press · <kbd>Backspace</kbd> hold/disengage.
+        </p>
+        <p className="app-disclaimer">
+          This is an interpretation of the autopilot display; accuracy to the real device will vary.
+          For familiarization training only — not for navigation or flight use.
+        </p>
       </footer>
     </div>
   )
