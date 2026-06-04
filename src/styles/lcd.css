@@ -198,6 +198,25 @@
 .lcd-op .tr .lcd-alt-k {
   font-size: calc(var(--alt-h) + 2 * var(--step));
 }
+/* stacked annunciation labels (ALT in ALT HOLD, GS in GS ARM/CPLD/FLG) match
+   the TRK / SEL label size */
+.lcd-op .lcd-stacked .lcd-sup {
+  font-size: var(--label);
+}
+/* SVS: fixed label + right-aligned value (fits a 4-digit value), same as the
+   level/emergency screen */
+.lcd-op .op-svs-lbl {
+  position: absolute;
+  left: calc(56% - 18px);
+  bottom: 8%;
+  font-size: var(--label);
+}
+.lcd-op .op-svs {
+  position: absolute;
+  right: calc(3% + 10px);
+  bottom: 8%;
+  font-size: 30cqh;
+}
 
 /* Emergency level (§8.1): BANK at the top-left with a large bottom-aligned bank
    angle centered under it; SVS label + value on the right. */

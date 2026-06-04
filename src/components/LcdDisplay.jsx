@@ -246,7 +246,19 @@ export default function LcdDisplay({ state }) {
       {d.vertSet && <VertSet />}
       <BottomLeft bl={d.bottomLeft} cursor={d.cursor} />
       <TopRight tr={d.topRight} />
-      <BottomRight br={d.bottomRight} cursor={d.cursor} />
+      {d.klass === 'lcd-op' && d.bottomRight && !d.bottomRight.stacked ? (
+        // SVS on the operating screen: fixed label + right-aligned value so the
+        // label stays put for a 2- to 4-digit value (as on the level screen).
+        <>
+          <span className="lcd-lbl op-svs-lbl">{d.bottomRight.label}</span>
+          <span className={'lcd-big op-svs' + (d.cursor === 'vs' ? ' lcd-underline' : '')}>
+            {d.bottomRight.value}
+            {d.bottomRight.arrow}
+          </span>
+        </>
+      ) : (
+        <BottomRight br={d.bottomRight} cursor={d.cursor} />
+      )}
     </div>
   )
 }

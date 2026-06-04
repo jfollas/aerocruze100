@@ -28,6 +28,7 @@ export const initialState = {
   gyroTrim: 0,
 
   cursor: 'track', // track | vs | altSel
+  altTouched: false, // whether selAlt was rotated since entering the SEL ALT setup
   preselectArmed: false,
   emergencyLevel: false,
   cwsHeld: false,
@@ -235,7 +236,7 @@ function onAlt(s) {
   if (!s.apEngaged) {
     if (s.screen === 'NORMAL') {
       // Altitude pre-select setup (§5.4.4).
-      return { ...s, screen: 'SEL_ALT', cursor: 'altSel' }
+      return { ...s, screen: 'SEL_ALT', cursor: 'altSel', altTouched: false }
     }
     if (s.screen === 'SEL_ALT') return { ...s, screen: 'ALT_SYNC', cursor: 'baro' }
     if (s.screen === 'ALT_SYNC') return { ...s, screen: 'NORMAL', cursor: 'altSel' }
@@ -253,7 +254,7 @@ function onAlt(s) {
     return { ...s, verticalMode: 'SVS', selVS: 500, gsTimer: 0 }
   }
   // Enter altitude-select setup (§5.4.3).
-  return { ...s, screen: 'SEL_ALT', cursor: 'altSel' }
+  return { ...s, screen: 'SEL_ALT', cursor: 'altSel', altTouched: false }
 }
 
 // ---- KNOB rotate ----
@@ -270,7 +271,7 @@ function rotate(s, dir, fine) {
       return { ...s, baro: clamp(s.baro + dir * (fine ? 1 : 10), -1000, 99000) }
     case 'SEL_ALT':
       if (s.cursor === 'vs') return { ...s, selVS: s.selVS + dir * 100 }
-      return { ...s, selAlt: clamp(s.selAlt + dir * (fine ? 100 : 500), 0, 99000) }
+      return { ...s, selAlt: clamp(s.selAlt + dir * (fine ? 100 : 500), 0, 99000), altTouched: true }
     case 'NORMAL':
     default:
       // In SkyView mode all commands come from the SkyView, not the knob (§10.2).
@@ -316,7 +317,15 @@ function onKnobPress(s) {
         // selected altitude (synchronizing to the current vertical speed).
         return engage({ ...s, preselectArmed: true })
       }
-      if (s.cursor === 'altSel') return { ...s, cursor: 'vs' }
+      if (s.cursor === 'altSel') {
+        // §5.4.2: pressing the KNOB without changing the altitude captures the
+        // current altitude into ALT HOLD (nearest 100 ft). Rotating first puts
+        // the cursor on SEL VS to set up a climb/descent instead (§5.4.3).
+        if (!s.altTouched) {
+          return { ...s, screen: 'NORMAL', verticalMode: 'ALTHOLD', selAlt: round(s.curAlt, 100), curVS: 0, cursor: 'track' }
+        }
+        return { ...s, cursor: 'vs' }
+      }
       // confirm: begin the transition to the selected altitude (§5.4.3)
       return confirmAltSelect(s)
     case 'NORMAL':

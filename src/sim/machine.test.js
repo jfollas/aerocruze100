@@ -111,6 +111,15 @@ describe('altitude select & sync (§5.1, §5.4.3)', () => {
     expect(s.verticalMode).toBe('ALTHOLD')
   })
 
+  it('ALT then KNOB (no rotate) holds the current altitude (§5.4.2)', () => {
+    let s = reducer(poweredOn({ curAlt: 5230 }), E.knobPress()) // engage -> SVS
+    expect(s.apEngaged).toBe(true)
+    s = reducer(s, E.alt()) // SEL_ALT, cursor altSel
+    s = reducer(s, E.knobPress()) // no rotate -> ALT HOLD
+    expect(s.verticalMode).toBe('ALTHOLD')
+    expect(s.selAlt).toBe(5200) // nearest 100 ft
+  })
+
   it('a knob press in ALT HOLD returns to SVS-zero (§5.4.1)', () => {
     let s = poweredOn({ curAlt: 4000 })
     s = reducer(s, E.knobPress()) // engage
