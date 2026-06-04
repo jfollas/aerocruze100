@@ -1,0 +1,83 @@
+.device {
+  position: relative;
+  width: 100%;
+  max-width: 620px;
+  aspect-ratio: 1 / 1;
+  margin: 0 auto;
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  touch-action: none;
+}
+
+.glass-wrap {
+  position: absolute;
+}
+
+/* interactive overlays sit on top of the photo */
+.hit {
+  position: absolute;
+  padding: 0;
+  margin: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  border-radius: 8px;
+  touch-action: none;
+}
+.btn-hit:focus-visible,
+.knob-hit:focus-visible {
+  outline: 2px solid #6fa8ff;
+  outline-offset: 2px;
+}
+.btn-hit:active {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.knob-wrap {
+  display: grid;
+  place-items: center;
+}
+.knob-hit {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  cursor: grab;
+  touch-action: none;
+  display: grid;
+  place-items: center;
+}
+.knob-hit:active {
+  cursor: grabbing;
+}
+/* a faint tick mark so the user sees the knob turning */
+.knob-mark {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+}
+.knob-mark::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 8%;
+  width: 6%;
+  height: 22%;
+  transform: translateX(-50%);
+  background: rgba(150, 190, 255, 0.85);
+  border-radius: 3px;
+  box-shadow: 0 0 6px rgba(120, 170, 255, 0.8);
+}
+.knob-fine {
+  position: absolute;
+  bottom: -1.6em;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #6fa8ff;
+  letter-spacing: 0.08em;
+  background: rgba(0, 0, 0, 0.6);
+  padding: 1px 6px;
+  border-radius: 4px;
+  pointer-events: none;
+}

@@ -1,0 +1,70 @@
+.config {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.cfg-group {
+  background: #181e27;
+  border: 1px solid #2a3340;
+  border-radius: 12px;
+  padding: 14px 16px;
+}
+.cfg-group h3 {
+  margin: 0 0 12px;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #8b99ab;
+}
+.cfg-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.cfg-row:last-child {
+  margin-bottom: 0;
+}
+.cfg-label {
+  flex: 0 0 92px;
+  font-size: 0.85rem;
+  color: #b7c2d1;
+}
+.cfg-seg {
+  display: flex;
+  flex: 1;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+.cfg-opt {
+  flex: 1;
+  min-width: 56px;
+  background: #232c38;
+  color: #c4cedb;
+  border: 1px solid #333d4b;
+  border-radius: 7px;
+  padding: 6px 8px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+.cfg-opt.active {
+  background: #2d6cdf;
+  border-color: #2d6cdf;
+  color: #fff;
+}
+.cfg-opt:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.cfg-row input[type='range'] {
+  flex: 1;
+  accent-color: #2d6cdf;
+}
+.cfg-val {
+  flex: 0 0 36px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  color: #b7c2d1;
+  font-size: 0.85rem;
+}

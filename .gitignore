@@ -1,0 +1,7 @@
+node_modules
+dist
+*.local
+.DS_Store
+
+# WSL / Windows alternate-data-stream metadata
+*:Zone.Identifier
