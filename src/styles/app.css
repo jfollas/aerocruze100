@@ -13,10 +13,26 @@
   max-width: 70ch;
   font-size: 0.95rem;
 }
+.switch-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 22px;
+  margin-bottom: 20px;
+}
+.switch-grp {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.switch-lbl {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #8b99ab;
+}
 .variant-switch {
   display: flex;
   gap: 8px;
-  margin-bottom: 20px;
 }
 .var-btn {
   background: #1c232e;

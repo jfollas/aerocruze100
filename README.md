@@ -11,6 +11,8 @@ every mode, before flying with the real unit.
 
 - Photo-realistic front panel for **both** physical variants (flat rectangular
   panel and the 2-inch round unit), switchable, sharing one simulation engine.
+- Selectable LCD display font: **Rounded** (Fredoka, closely matching the real
+  unit) or **Pixel** (Fixedsys Excelsior, a retro look) — both bundled locally.
 - A simulated LCD overlaid on the photo's glass, rendering the display states
   described in the *TT-167 Vizion PMA Operating Handbook* (`assets/`):
   power-up, altimeter sync, engage/disengage, lateral modes (TRK / GPS NAV /

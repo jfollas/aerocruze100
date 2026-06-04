@@ -8,6 +8,12 @@ import './styles/app.css'
 export default function App() {
   const [state, dispatch] = useReducer(reducer, initialState)
   const [variant, setVariant] = useState('flat')
+  const [font, setFont] = useState('fredoka')
+
+  const LCD_FONTS = {
+    fredoka: { label: 'Rounded', family: "'Aerocruze LCD'" },
+    fixedsys: { label: 'Pixel', family: "'Fixedsys'" },
+  }
 
   // Sim clock: ~10 Hz while powered.
   useEffect(() => {
@@ -61,23 +67,42 @@ export default function App() {
   }, [onKey])
 
   return (
-    <div className="app">
+    <div className="app" style={{ '--lcd-font': LCD_FONTS[font].family }}>
       <header className="app-head">
         <h1>Aerocruze 100 Autopilot Simulator</h1>
         <p className="sub">
           Practice the buttonology of the BendixKing Aerocruze 100 (TruTrak Vizion PMA). Tap MODE / ALT, drag the
           knob to twist, tap it to press, hold it to disengage.
         </p>
-        <div className="variant-switch">
-          {Object.entries(VARIANTS).map(([key, v]) => (
-            <button
-              key={key}
-              className={'var-btn' + (variant === key ? ' active' : '')}
-              onClick={() => setVariant(key)}
-            >
-              {v.label}
-            </button>
-          ))}
+        <div className="switch-bar">
+          <div className="switch-grp">
+            <span className="switch-lbl">Unit</span>
+            <div className="variant-switch">
+              {Object.entries(VARIANTS).map(([key, v]) => (
+                <button
+                  key={key}
+                  className={'var-btn' + (variant === key ? ' active' : '')}
+                  onClick={() => setVariant(key)}
+                >
+                  {v.label}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="switch-grp">
+            <span className="switch-lbl">Display font</span>
+            <div className="variant-switch">
+              {Object.entries(LCD_FONTS).map(([key, f]) => (
+                <button
+                  key={key}
+                  className={'var-btn' + (font === key ? ' active' : '')}
+                  onClick={() => setFont(key)}
+                >
+                  {f.label}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
       </header>
 
