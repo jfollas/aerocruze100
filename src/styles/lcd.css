@@ -252,7 +252,7 @@
   position: absolute;
   right: calc(3% + 10px);
   bottom: 8%;
-  font-size: var(--fs-label);
+  font-size: var(--fs-alt-hundreds); /* same size as the ALT hundreds */
 }
 /* SkyView variant: SVS renders exactly as on the TRK page; the ALT label is
    pulled left to align with the SVS label. */
