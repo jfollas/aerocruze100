@@ -50,7 +50,7 @@
 
 .lcd-underline {
   text-decoration: underline;
-  text-decoration-thickness: 1cqh; /* consistent cursor thickness */
+  text-decoration-thickness: 3cqh; /* consistent cursor thickness */
   text-underline-offset: 2.6cqh; /* a little more spacing from the digits */
 }
 
@@ -66,8 +66,8 @@
 }
 .lcd-alt.lcd-underline {
   text-decoration: none;
-  border-bottom: 1cqh solid currentColor; /* matches the text underline thickness */
-  padding-bottom: 2.3cqh; /* matching spacing from the digits */
+  border-bottom: 3cqh solid currentColor; /* matches the text underline thickness */
+  padding-bottom: 0; /* underline tight against the digits on SEL ALT */
 }
 
 /* SEL ALT view tweaks: larger labels, smaller altitude digits, and inset
