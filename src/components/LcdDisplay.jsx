@@ -30,14 +30,28 @@ function Stacked({ words }) {
 
 // Zone renderers --------------------------------------------------------------
 
-function VertSet() {
+// A column of characters (e.g. vertical "SET", or the trim annunciation),
+// positioned and sized like the device's vertical text.
+function VertStack({ chars }) {
   return (
     <span className="lcd-vertset">
-      {'SET'.split('').map((c, i) => (
+      {chars.map((c, i) => (
         <span key={i}>{c}</span>
       ))}
     </span>
   )
+}
+
+function VertSet() {
+  return <VertStack chars={['S', 'E', 'T']} />
+}
+
+// Trim annunciation (§4.3): an up-arrow above "U"/"P", or "D"/"N" above a
+// down-arrow — rendered vertically like the SET text (Fig 4.3a/4.3b).
+function TrimVert({ trim }) {
+  if (trim === 'up') return <VertStack chars={['↑', 'U', 'P']} />
+  if (trim === 'dn') return <VertStack chars={['D', 'N', '↓']} />
+  return null
 }
 
 function TopLeft({ tl, suppressQual }) {
@@ -49,9 +63,6 @@ function TopLeft({ tl, suppressQual }) {
         {!suppressQual && <Qual char={tl.qual} />}
       </span>
       {tl.value != null && <Big cls="lcd-head-val">{tl.value}</Big>}
-      {tl.trim && tl.trim !== 'none' && (
-        <span className="lcd-trim">{tl.trim === 'up' ? 'U▲' : 'DN▼'}</span>
-      )}
     </div>
   )
 }
@@ -247,6 +258,7 @@ export default function LcdDisplay({ state }) {
         <span className={'lcd-qual lcd-flash lcd-qual-fixed ' + qualSym(fixedQual)}>{fixedQual}</span>
       )}
       {d.vertSet && <VertSet />}
+      <TrimVert trim={d.topLeft?.trim} />
       <BottomLeft bl={d.bottomLeft} cursor={d.cursor} />
       {isOp && d.topRight && !d.topRight.plain ? (
         // SEL altitude: label fixed at the right-column left, value right-aligned.

@@ -23,7 +23,6 @@
      one place. Units are cqh (percent of the LCD height) so type scales with
      the glass. */
   --fs-step: 4cqh; /* one size step (used by relative sizes below) */
-  --fs-trim: 18cqh; /* trim arrows (U▲ / DN▼) */
   --fs-sm: 20cqh; /* superscripts, GPS-quality char, base labels */
   --fs-alt-hundreds: 22cqh; /* raised hundreds on the operating-screen altitude */
   --fs-vert: 26cqh; /* vertical SET letters */
@@ -355,12 +354,6 @@
   flex-direction: column;
   align-items: flex-start;
   line-height: 0.95;
-}
-
-/* trim arrow next to the lateral value */
-.lcd-trim {
-  font-size: var(--fs-trim);
-  align-self: flex-start;
 }
 
 /* vertical "SET" letters, flowing just after the header (as on the device) */
