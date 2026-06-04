@@ -232,10 +232,13 @@ export default function LcdDisplay({ state }) {
     )
   }
 
+  // The engaged operating screen (lcd-op) and its SkyView variant share a layout.
+  const isOp = (d.klass || '').split(' ').includes('lcd-op')
+
   // On the home and engaged-operating screens the GPS signal indicator is placed
   // at a fixed position (per symbol), independent of the header, rather than
   // flowing under it.
-  const fixedQual = d.klass === 'lcd-home' || d.klass === 'lcd-op' ? d.topLeft?.qual : null
+  const fixedQual = d.klass === 'lcd-home' || isOp ? d.topLeft?.qual : null
 
   return (
     <div className={'lcd' + (d.klass ? ' ' + d.klass : '')}>
@@ -245,7 +248,7 @@ export default function LcdDisplay({ state }) {
       )}
       {d.vertSet && <VertSet />}
       <BottomLeft bl={d.bottomLeft} cursor={d.cursor} />
-      {d.klass === 'lcd-op' && d.topRight && !d.topRight.plain ? (
+      {isOp && d.topRight && !d.topRight.plain ? (
         // SEL altitude: label fixed at the right-column left, value right-aligned.
         <>
           {d.topRight.label && <span className="lcd-lbl op-sel-lbl">{d.topRight.label}</span>}
@@ -260,7 +263,7 @@ export default function LcdDisplay({ state }) {
       ) : (
         <TopRight tr={d.topRight} />
       )}
-      {d.klass === 'lcd-op' && d.bottomRight ? (
+      {isOp && d.bottomRight ? (
         d.bottomRight.stacked ? (
           // ALT HOLD / GS ARM / GS CPLD / GS FLG: the first word (ALT/GS) is a
           // raised label at the right-column left (sharing the SEL-label left of

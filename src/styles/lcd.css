@@ -251,6 +251,10 @@
   bottom: 8%;
   font-size: var(--fs-label);
 }
+/* SkyView variant: align the SVS label with the ALT/SEL right-column left. */
+.lcd-sky .op-svs-lbl {
+  left: var(--rlabel-left);
+}
 
 /* Emergency level (§8.1): BANK at the top-left with a large bottom-aligned bank
    angle centered under it; SVS label + value on the right. */

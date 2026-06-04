@@ -122,11 +122,13 @@ export function deriveDisplay(s) {
   // SkyView mode (Installation Manual §10.2). Header is SKYVIEW; lateral follows
   // the heading bug (SEL) or a flight plan (GPS); the altitude bug shows top-right.
   if (s.lateralMode === 'SKYVIEW') {
-    const model = { cursor: s.cursor }
+    // Shares the operating-screen layout (lcd-op); lcd-sky tweaks the SVS label
+    // to align with the ALT/SEL right-column left.
+    const model = { klass: 'lcd-op lcd-sky', cursor: s.cursor }
     model.topLeft = { header: 'SKYVIEW', qual: gpsQual(s) }
     model.bottomLeft =
       s.skyviewCdi === 'flightplan' ? { text: 'GPS' } : { label: 'SEL', value: pad(s.selTrack) }
-    if (s.svAltBugSet) model.topRight = { label: 'ALT', value: String(Math.round(s.svAltBug)) }
+    if (s.svAltBugSet) model.topRight = { label: 'ALT', alt: Math.round(s.svAltBug) }
     model.bottomRight = verticalZone(s)
     return model
   }
