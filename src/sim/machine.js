@@ -348,6 +348,11 @@ function confirmAltSelect(s) {
 // ---- engage / disengage ----
 
 function engage(s) {
+  // Engaging while already in SkyView mode (entered from AP OFF) stays in SkyView
+  // and keeps following the SkyView bugs (Install Manual §10.2).
+  if (s.skyview === 'on' && s.lateralMode === 'SKYVIEW') {
+    return { ...enterSkyview(s), apEngaged: true, preselectArmed: false }
+  }
   const lateral = lateralCycle(s).includes(s.lateralMode) ? s.lateralMode : 'TRK'
   let verticalMode = 'SVS'
   let selVS = round(s.curVS, 100)

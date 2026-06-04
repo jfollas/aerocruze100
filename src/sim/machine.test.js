@@ -281,6 +281,17 @@ describe('Dynon SkyView mode (Install Manual §10)', () => {
     expect(deriveDisplay(s).topRight).toBeUndefined() // no ALT bug shown
   })
 
+  it('can enter SkyView while disengaged and stay in it when engaged (§10.2)', () => {
+    let s = poweredOn({ skyview: 'on', svHeadingBug: 200 })
+    s = reducer(s, E.mode()) // enter SkyView while disengaged
+    expect(s.lateralMode).toBe('SKYVIEW')
+    expect(s.apEngaged).toBe(false)
+    s = reducer(s, E.knobPress()) // engage
+    expect(s.apEngaged).toBe(true)
+    expect(s.lateralMode).toBe('SKYVIEW') // stays in SkyView, not TRK
+    expect(s.selTrack).toBe(200)
+  })
+
   it('drops out of SkyView if the signal is lost', () => {
     let s = poweredOn({ skyview: 'on' })
     s = reducer(s, E.knobPress())
