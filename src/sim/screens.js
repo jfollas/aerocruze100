@@ -85,6 +85,7 @@ export function deriveDisplay(s) {
   // Altimeter sync (§5.1) — matches the two reference photos.
   if (s.screen === 'ALT_SYNC') {
     return {
+      klass: 'lcd-alt-sync',
       topLeft: { header: 'ALT SYNC' },
       vertSet: true,
       topRight: { value: String(Math.round(s.baro)), underline: true },

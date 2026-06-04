@@ -8,12 +8,6 @@ import './styles/app.css'
 export default function App() {
   const [state, dispatch] = useReducer(reducer, initialState)
   const [variant, setVariant] = useState('flat')
-  const [font, setFont] = useState('fredoka')
-
-  const LCD_FONTS = {
-    fredoka: { label: 'Rounded', family: "'Aerocruze LCD'" },
-    fixedsys: { label: 'Pixel', family: "'Fixedsys'" },
-  }
 
   // Sim clock: ~10 Hz while powered.
   useEffect(() => {
@@ -67,7 +61,7 @@ export default function App() {
   }, [onKey])
 
   return (
-    <div className="app" style={{ '--lcd-font': LCD_FONTS[font].family }}>
+    <div className="app">
       <header className="app-head">
         <h1>Aerocruze 100 Autopilot Simulator</h1>
         <p className="sub">
@@ -85,20 +79,6 @@ export default function App() {
                   onClick={() => setVariant(key)}
                 >
                   {v.label}
-                </button>
-              ))}
-            </div>
-          </div>
-          <div className="switch-grp">
-            <span className="switch-lbl">Display font</span>
-            <div className="variant-switch">
-              {Object.entries(LCD_FONTS).map(([key, f]) => (
-                <button
-                  key={key}
-                  className={'var-btn' + (font === key ? ' active' : '')}
-                  onClick={() => setFont(key)}
-                >
-                  {f.label}
                 </button>
               ))}
             </div>

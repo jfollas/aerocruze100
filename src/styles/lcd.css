@@ -10,8 +10,7 @@
   background-image: radial-gradient(ellipse at center, #102350 0%, #07142e 100%);
   overflow: hidden;
   color: #8fb6ff;
-  font-family: var(--lcd-font, 'Aerocruze LCD'), 'Segoe UI', Arial, sans-serif;
-  font-weight: 450;
+  font-family: 'Fixedsys', 'Courier New', monospace;
   text-transform: uppercase;
   line-height: 1;
   --glow: 0 0 2cqh rgba(120, 170, 255, 0.65);
@@ -70,32 +69,44 @@
   padding-bottom: 0; /* underline tight against the digits on SEL ALT */
 }
 
-/* SEL ALT view tweaks: larger labels, smaller altitude digits, and inset
-   margins so the values clear the bezel. */
+/* SEL ALT & ALT SYNC share a larger label and a little extra top margin. */
+.lcd-sel-alt,
+.lcd-alt-sync {
+  --label: 30cqh; /* SEL ALT / SEL VS / ALT SYNC labels */
+  --step: 4cqh; /* one font-size step */
+}
+.lcd-sel-alt .lcd-lbl,
+.lcd-alt-sync .lcd-lbl {
+  font-size: var(--label);
+}
+.lcd-sel-alt .tl,
+.lcd-sel-alt .tr,
+.lcd-alt-sync .tl,
+.lcd-alt-sync .tr {
+  top: calc(8% + 3px); /* extra top margin */
+}
+
+/* SEL ALT altitude: thousands 2 steps above the (normal-size) hundreds. */
 .lcd-sel-alt {
   --alt-h: 31.5cqh; /* 100s (hundreds) size */
-  --alt-step: 4cqh; /* one font-size step */
-}
-.lcd-sel-alt .lcd-lbl {
-  font-size: 30cqh; /* SEL ALT / SEL VS labels, 1.5x */
 }
 .lcd-sel-alt .lcd-alt .lcd-big {
   font-size: var(--alt-h); /* hundreds */
 }
 .lcd-sel-alt .lcd-alt-k {
-  font-size: calc(var(--alt-h) + 2 * var(--alt-step)); /* thousands: 2 steps above the hundreds */
+  font-size: calc(var(--alt-h) + 2 * var(--step)); /* thousands */
 }
-.lcd-sel-alt .tr,
-.lcd-sel-alt .br {
-  right: calc(3% + 10px);
+
+/* ALT SYNC: tighten the wide monospace space in the header, and render the
+   vertical SET right after it (top-aligned) two steps smaller than the label. */
+.lcd-alt-sync .lcd-lbl {
+  word-spacing: -0.5ch; /* halve the ALT|SYNC space */
 }
-.lcd-sel-alt .tl,
-.lcd-sel-alt .bl {
-  left: calc(3% + 10px);
+.lcd-alt-sync .tl {
+  gap: 0.5cqw; /* tighter gap between ALT SYNC and the SET */
 }
-.lcd-sel-alt .tl,
-.lcd-sel-alt .tr {
-  top: calc(8% + 3px); /* extra top margin */
+.lcd-alt-sync .lcd-vertset {
+  font-size: calc(var(--label) - 2 * var(--step)); /* 30 - 8 = 22cqh */
 }
 
 /* header + flashing quality char stacked in a column */
@@ -107,22 +118,23 @@
 }
 
 /* ---- zone positions (percentages of the glass) ---- */
+/* the 10px left/right inset applies to every screen */
 .tl {
-  left: 3%;
+  left: calc(3% + 10px);
   top: 8%;
 }
 .bl {
-  left: 3%;
+  left: calc(3% + 10px);
   bottom: 8%;
   align-items: baseline;
 }
 .tr {
-  right: 3%;
+  right: calc(3% + 10px);
   top: 8%;
   align-items: baseline;
 }
 .br {
-  right: 3%;
+  right: calc(3% + 10px);
   bottom: 8%;
   align-items: baseline;
 }
@@ -150,12 +162,10 @@
 
 /* vertical "SET" letters, flowing just after the header (as on the device) */
 .lcd-vertset {
-  display: inline-flex;
+  display: flex;
   flex-direction: column;
   align-items: center;
-  font-size: 20cqh;
   line-height: 1.02;
-  margin-left: 0.4cqw;
 }
 
 /* full-screen messages */

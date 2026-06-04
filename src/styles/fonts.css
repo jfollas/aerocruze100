@@ -1,14 +1,5 @@
-/* LCD fonts, bundled locally so they render consistently and work offline.
-   - "Aerocruze LCD" (Fredoka): a bold rounded sans-serif matching the real unit.
-   - "Fixedsys": Fixedsys Excelsior, a square monospaced pixel font (retro look).
-   The active one is chosen at runtime via the --lcd-font CSS variable. */
-@font-face {
-  font-family: 'Aerocruze LCD';
-  font-style: normal;
-  font-weight: 300 700; /* variable weight axis */
-  font-display: swap;
-  src: url('./fonts/fredoka.woff2') format('woff2');
-}
+/* The LCD font: Fixedsys Excelsior, a square monospaced pixel font that closely
+   approximates the real Aerocruze 100 display. Bundled locally (offline-safe). */
 @font-face {
   font-family: 'Fixedsys';
   font-style: normal;
