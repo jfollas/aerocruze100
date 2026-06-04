@@ -33,7 +33,7 @@ function VertSet() {
   )
 }
 
-function TopLeft({ tl, vertSet }) {
+function TopLeft({ tl }) {
   if (!tl) return null
   return (
     <div className="lcd-zone tl">
@@ -41,7 +41,6 @@ function TopLeft({ tl, vertSet }) {
         <span className="lcd-lbl">{tl.header}</span>
         <Qual char={tl.qual} />
       </span>
-      {vertSet && <VertSet />}
       {tl.value != null && <Big>{tl.value}</Big>}
       {tl.trim && tl.trim !== 'none' && (
         <span className="lcd-trim">{tl.trim === 'up' ? 'U▲' : 'DN▼'}</span>
@@ -186,7 +185,8 @@ export default function LcdDisplay({ state }) {
 
   return (
     <div className={'lcd' + (d.klass ? ' ' + d.klass : '')}>
-      <TopLeft tl={d.topLeft} vertSet={d.vertSet} />
+      <TopLeft tl={d.topLeft} />
+      {d.vertSet && <VertSet />}
       <BottomLeft bl={d.bottomLeft} cursor={d.cursor} />
       <TopRight tr={d.topRight} />
       <BottomRight br={d.bottomRight} cursor={d.cursor} />

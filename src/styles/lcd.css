@@ -34,6 +34,7 @@
 .lcd-lbl {
   font-size: 20cqh;
   letter-spacing: 0.02em;
+  word-spacing: -0.5ch; /* tighten the wide monospace space in multi-word labels */
 }
 .lcd-big {
   font-size: 37cqh;
@@ -97,17 +98,6 @@
   font-size: calc(var(--alt-h) + 2 * var(--step)); /* thousands */
 }
 
-/* ALT SYNC: tighten the wide monospace space in the header, and render the
-   vertical SET right after it (top-aligned) two steps smaller than the label. */
-.lcd-alt-sync .lcd-lbl {
-  word-spacing: -0.5ch; /* halve the ALT|SYNC space */
-}
-.lcd-alt-sync .tl {
-  gap: 0.5cqw; /* tighter gap between ALT SYNC and the SET */
-}
-.lcd-alt-sync .lcd-vertset {
-  font-size: calc(var(--label) - 2 * var(--step)); /* 30 - 8 = 22cqh */
-}
 
 /* header + flashing quality char stacked in a column */
 .lcd-headcol {
@@ -161,11 +151,17 @@
 }
 
 /* vertical "SET" letters, flowing just after the header (as on the device) */
+/* Vertical text (e.g. SET) renders in a fixed column, top-aligned with the
+   header. This is the standard position for all vertical text. */
 .lcd-vertset {
+  position: absolute;
+  left: 55%;
+  top: calc(8% + 3px);
   display: flex;
   flex-direction: column;
   align-items: center;
-  line-height: 1.02;
+  font-size: 22cqh; /* two steps below the 30cqh label */
+  line-height: 0.78; /* tight vertical character spacing */
 }
 
 /* full-screen messages */
