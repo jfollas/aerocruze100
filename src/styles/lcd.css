@@ -180,7 +180,7 @@
    like the bank-angle digits; the SEL altitude uses the raised hundreds. */
 .lcd-op {
   --rlabel-left: calc(58.3% - 12px); /* left of the right-side label column (SEL/ALT) */
-  --svs-left: calc(56% - 18px); /* left of the SVS label (clears a 4-digit value) */
+  --svs-left: calc(56% - 3px); /* left of the SVS label (and the SkyView ALT label) */
 }
 .lcd-op .lcd-lbl {
   font-size: var(--fs-label);
