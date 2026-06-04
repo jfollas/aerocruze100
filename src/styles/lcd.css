@@ -76,7 +76,7 @@
   left: 0;
   right: 0;
   bottom: 2cqh; /* pulled up toward the digits */
-  height: 4cqh; /* slightly thicker than the 3cqh text underline */
+  height: 3cqh; /* matches the text underline thickness */
   background: currentColor;
 }
 
