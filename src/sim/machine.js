@@ -311,8 +311,10 @@ function onKnobPress(s) {
       return { ...s, screen: 'NORMAL', cursor: s.apEngaged ? 'track' : 'altSel' }
     case 'SEL_ALT':
       if (!s.apEngaged) {
-        // arm the pre-select and return to the disengaged home screen (§5.4.4)
-        return { ...s, screen: 'NORMAL', preselectArmed: true, cursor: 'track' }
+        // §5.4.4 / Fig 5.4.4a: pressing the KNOB from the pre-select screen
+        // engages the AP, which then proceeds in a climb/descent toward the
+        // selected altitude (synchronizing to the current vertical speed).
+        return engage({ ...s, preselectArmed: true })
       }
       if (s.cursor === 'altSel') return { ...s, cursor: 'vs' }
       // confirm: begin the transition to the selected altitude (§5.4.3)

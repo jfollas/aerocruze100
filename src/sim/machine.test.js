@@ -122,16 +122,14 @@ describe('altitude select & sync (§5.1, §5.4.3)', () => {
 })
 
 describe('altitude pre-select while disengaged (§5.4.4)', () => {
-  it('ALT -> select alt -> knob arms; engaging climbs in SEL', () => {
+  it('ALT -> select alt -> knob press engages directly into the climb (Fig 5.4.4a)', () => {
     let s = poweredOn({ curAlt: 1500, curVS: 0 })
     s = reducer(s, E.alt()) // SEL_ALT, cursor altSel
     s = run(s, ...Array(4).fill(E.knobCw())) // +2000 -> selAlt 5000
     expect(s.selAlt).toBe(5000)
-    s = reducer(s, E.knobPress()) // arm
-    expect(s.preselectArmed).toBe(true)
-    expect(s.apEngaged).toBe(false)
-    s = reducer(s, E.knobPress()) // engage
+    s = reducer(s, E.knobPress()) // engage straight into the pre-select climb
     expect(s.apEngaged).toBe(true)
+    expect(s.screen).toBe('NORMAL')
     expect(s.verticalMode).toBe('SEL')
     expect(s.selVS).toBe(500) // synced to 500 fpm when current VS < 400 (§5.4.4)
   })
