@@ -89,9 +89,9 @@ describe('altitude select & sync (§5.1, §5.4.3)', () => {
     expect(s.screen).toBe('SEL_ALT')
     s = reducer(s, E.alt())
     expect(s.screen).toBe('ALT_SYNC')
-    const baro0 = s.baro
+    const delta0 = s.altDelta
     s = reducer(s, E.knobCw())
-    expect(s.baro).toBe(baro0 + 10)
+    expect(s.altDelta).toBe(delta0 + 10)
     s = reducer(s, E.knobPress())
     expect(s.screen).toBe('NORMAL')
   })

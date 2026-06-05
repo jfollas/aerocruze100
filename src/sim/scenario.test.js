@@ -50,7 +50,7 @@ describe('GNS430W + GPSS flies the published approach', () => {
     expect(s.verticalMode).not.toBe('GS_CPLD')
 
     // continue to the FAF and onto the final — it sequences and couples
-    s = fly(s, 320)
+    s = fly(s, 380)
     expect(s.activeLeg).toBe(3)
     expect(s.verticalMode).toBe('GS_CPLD')
     expect(s.lpvPhase).toBe('CPLD')
@@ -66,14 +66,14 @@ describe('GNS430W + GPSS flies the published approach', () => {
 
   it('descends through the 700-AGL floor and flags the warning', () => {
     let s = coupledSetup('WUDAT')
-    s = fly(s, 520)
+    s = fly(s, 575)
     expect(s.curAlt).toBeLessThan(AP_MIN_MSL) // below 1373 ft MSL
     expect(s.agl).toBeLessThan(700)
   })
 
   it('a momentary ALT press in GS CPLD goes missed (climb, no re-couple)', () => {
     let s = coupledSetup('WUDAT')
-    s = fly(s, 420)
+    s = fly(s, 450)
     expect(s.verticalMode).toBe('GS_CPLD')
     const alt0 = s.curAlt
     s = reducer(s, E.alt()) // §5.4.6 missed approach

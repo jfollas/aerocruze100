@@ -1,6 +1,5 @@
 /* RNAV (GPS) RWY 10 approach trainer panel */
 .apch {
-  margin-top: 28px;
   background: #11151c;
   border: 1px solid #2a3340;
   border-radius: 10px;
@@ -8,10 +7,9 @@
 }
 .apch-head {
   display: flex;
-  flex-wrap: wrap;
-  gap: 12px 24px;
-  align-items: flex-start;
-  justify-content: space-between;
+  flex-direction: column;
+  gap: 10px;
+  align-items: stretch;
 }
 .apch-title h3 {
   margin: 0 0 4px;
@@ -88,10 +86,9 @@
 
 .apch-views {
   margin-top: 12px;
-  display: grid;
-  grid-template-columns: minmax(300px, 500px) 1fr;
-  gap: 16px;
-  align-items: start;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 .apch-map {
   background: #fff;

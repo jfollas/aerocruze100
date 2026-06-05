@@ -40,9 +40,9 @@ export const approach = (cur, target, maxStep) => {
 // Shared bank/turn integrator: ease the bank toward the commanded track and
 // advance curTrack in proportion to the actual bank (a coordinated turn). Used
 // by both the legacy stepFlight path and the position-based scenario engine.
-export function lateralStep(s, dt, targetTrackMag) {
+export function lateralStep(s, dt, targetTrackMag, maxBank = MAX_BANK) {
   const d = angleDiff(s.curTrack, targetTrackMag)
-  const targetBank = Math.max(-MAX_BANK, Math.min(MAX_BANK, d))
+  const targetBank = Math.max(-maxBank, Math.min(maxBank, d))
   const bank = approach(s.bankAngle, targetBank, Math.abs(targetBank - s.bankAngle) * Math.min(1, ROLL_RESPONSE * dt))
   const turnStep = (bank / MAX_BANK) * TURN_RATE * dt
   const curTrack = mod360(s.curTrack + Math.sign(d) * Math.min(Math.abs(d), Math.abs(turnStep)))
@@ -147,10 +147,9 @@ export function stepFlight(s, dt) {
   patch.curAlt = Math.max(0, altBase + (newVS / 60) * dt)
 
   // ---- Airspeed & pitch (light model for the PFD) ----
-  // Cruise IAS when flying, tapering off near the ground; trims back a touch in
-  // a climb and gains a touch in a descent.
-  const flying = s.groundSpeed > 10
-  const targetIAS = flying ? (onLpv ? GS_APPROACH_IAS : Math.max(60, CRUISE_IAS - newVS / 100)) : 0
+  // The indicated airspeed follows the simulated ground speed (set via the
+  // speed-tape drag or the Ground speed control), eased.
+  const targetIAS = Math.max(0, s.groundSpeed)
   const { curIAS, pitch } = perfStep(s, dt, newVS, targetIAS)
   patch.curIAS = curIAS
   patch.pitch = pitch

@@ -91,7 +91,7 @@ export function deriveDisplay(s) {
       klass: 'lcd-alt-sync',
       topLeft: { header: 'ALT SYNC' },
       vertSet: true,
-      topRight: { value: String(Math.round(s.baro)), underline: true },
+      topRight: { value: String(Math.round(s.curAlt + s.altDelta)), underline: true },
     }
   }
 

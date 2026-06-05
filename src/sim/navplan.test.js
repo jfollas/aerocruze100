@@ -49,11 +49,11 @@ describe('GPSS guidance', () => {
   })
 
   it('turn-anticipation distance grows with groundspeed', () => {
-    // place the aircraft 1.5 nm before UBAYA on the WUDAT->UBAYA leg so there is
+    // place the aircraft 0.55 nm before UBAYA on the WUDAT->UBAYA leg so there is
     // a 90° course change ahead; the distance sits between the slow and fast
-    // turn-anticipation radii, so only the fast case should sequence here.
-    const slow = gpssGuidance(PLANS.WUDAT, 1, { x: FIX_XY.UBAYA.x, y: FIX_XY.UBAYA.y - 1.5 }, 60)
-    const fast = gpssGuidance(PLANS.WUDAT, 1, { x: FIX_XY.UBAYA.x, y: FIX_XY.UBAYA.y - 1.5 }, 150)
+    // standard-rate turn-anticipation radii, so only the fast case sequences here.
+    const slow = gpssGuidance(PLANS.WUDAT, 1, { x: FIX_XY.UBAYA.x, y: FIX_XY.UBAYA.y - 0.55 }, 60)
+    const fast = gpssGuidance(PLANS.WUDAT, 1, { x: FIX_XY.UBAYA.x, y: FIX_XY.UBAYA.y - 0.55 }, 150)
     // not a strict assertion on both, but the fast case should sequence at this
     // distance while the slow one should not
     expect(fast.sequence).toBe(true)

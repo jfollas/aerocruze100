@@ -11,7 +11,18 @@ import { PLANS } from './navplan.js'
 const clamp = (x, lo, hi) => Math.max(lo, Math.min(hi, x))
 const round = (x, step) => Math.round(x / step) * step
 
-export const DEFAULT_BARO = 1352 // matches handbook figure 5.1a; reset on power cycle
+// The autopilot derives altitude from its own (uncorrected) pressure source, so
+// its reading can differ from the PFD's baro-corrected altitude by an offset the
+// pilot must zero on the ALT SYNC screen (press ALT twice, then match). Aspen
+// (PMAEFIS Type 1) and Garmin G5 (Type 2) feed the baro-corrected altitude over
+// ARINC, so they keep the autopilot synced automatically.
+export const STARTUP_BARO_DELTA = 200 // mismatch present at power-up (startup checklist)
+const PREAPP_BARO_DELTA = 150 // re-introduced when arming GPSS for an approach (pre-procedure check)
+
+// True when the connected EFIS auto-syncs the autopilot's baro/altitude.
+export function baroAutoSync(s) {
+  return s.arinc === 'aspen' || s.arinc === 'g5'
+}
 
 export const initialState = {
   power: 'off', // 'off' | 'booting' | 'on'
@@ -25,7 +36,7 @@ export const initialState = {
   selVS: 0,
   selAlt: 3000,
   selBank: 0, // gyro-backup selected bank angle
-  baro: DEFAULT_BARO,
+  altDelta: 0, // autopilot reported altitude minus the PFD altitude (ft); zeroed by ALT SYNC
   contrast: 7,
   minBklt: 7,
   gyroTrim: 0,
@@ -48,7 +59,7 @@ export const initialState = {
   groundSpeed: 0,
 
   // config (set via SET_CONFIG)
-  gpsStatus: 'NOGPS', // NOGPS | NOFIX | OK
+  gpsStatus: 'OK', // NOGPS | NOFIX | OK
   gpsData: 'none', // none | portable (RS232 -> GPS NAV) | ifr (ARINC429 -> GPSS)
   arinc: 'none', // none | aspen (A) | g5 (E)
   approachActive: false,
@@ -57,6 +68,9 @@ export const initialState = {
   gsDist: null, // NM to the threshold while on the LPV approach
   gsDev: 0, // glideslope deviation in dots (+ = beam above, fly up); for the GSI
   gpsDtk: null, // desired track of the active GPS leg (deg mag); drives the HSI needle
+  cdiDev: 0, // lateral course deviation in dots (+ = course right of aircraft)
+  cdiScale: null, // CDI full-scale sensitivity (NM)
+  cdiToFrom: null, // CDI TO/FROM flag: 'TO' | 'FROM' | null
 
   // RNAV (GPS) RWY 10 scenario (to-scale map + profile). When active, the
   // position-based scenario engine flies the published approach.
@@ -155,7 +169,7 @@ function applyConfig(state, patch) {
       return { ...state, ...fields, power: 'booting', bootTimer: 3, warning: null }
     }
     if (fields.power === 'off') {
-      // full power-down: clears warnings & baro resets on next boot (§3, §8.4)
+      // full power-down: clears warnings & the baro mismatch is re-set on next boot (§3, §8.4)
       return { ...initialState, ...keepConfig(state), ...fields, power: 'off' }
     }
   }
@@ -164,7 +178,7 @@ function applyConfig(state, patch) {
   if (fields.scenarioActive === true) {
     s = startScenario(s, fields.scenarioIaf || s.scenarioIaf)
   } else if (fields.scenarioActive === false) {
-    s = { ...s, gpsDtk: null }
+    s = { ...s, gpsDtk: null, cdiDev: 0, cdiScale: null, cdiToFrom: null }
   }
   // Inducing a sensor error disengages and latches until power cycle (§8.4)
   if (fields.warning === 'SENSOR') {
@@ -251,7 +265,13 @@ function onMode(s) {
   const cycle = lateralCycle(s)
   const i = cycle.indexOf(s.lateralMode)
   const next = cycle[(i + 1) % cycle.length]
-  return { ...s, lateralMode: next }
+  const out = { ...s, lateralMode: next }
+  // Arming GPSS for a loaded approach re-introduces a baro mismatch, prompting
+  // an altitude check/sync as part of the pre-procedure checklist.
+  if (next === 'GPSS' && s.approachActive && !baroAutoSync(s)) {
+    out.altDelta = PREAPP_BARO_DELTA
+  }
+  return out
 }
 
 // ---- SkyView mode (Installation Manual §10) ----
@@ -324,7 +344,8 @@ function rotate(s, dir, fine) {
     case 'GYRO_TRIM':
       return { ...s, gyroTrim: round(s.gyroTrim + dir * 0.2, 0.2) }
     case 'ALT_SYNC':
-      return { ...s, baro: clamp(s.baro + dir * (fine ? 1 : 10), -1000, 99000) }
+      // match the reported altitude to the PFD: adjust the offset toward zero
+      return { ...s, altDelta: clamp(s.altDelta + dir * (fine ? 1 : 10), -2000, 2000) }
     case 'SEL_ALT':
       if (s.cursor === 'vs') return { ...s, selVS: s.selVS + dir * 100 }
       return { ...s, selAlt: clamp(s.selAlt + dir * (fine ? 100 : 500), 0, 99000), altTouched: true }
@@ -484,7 +505,12 @@ function emergencyLevel(s) {
 function onTick(s, dt) {
   if (s.power === 'booting') {
     const t = s.bootTimer - dt
-    if (t <= 0) return { ...s, power: 'on', bootTimer: 0, screen: 'NORMAL' }
+    if (t <= 0) {
+      // come alive with a baro mismatch to sync on the startup checklist (unless
+      // the EFIS keeps it synced for us)
+      const altDelta = baroAutoSync(s) ? 0 : STARTUP_BARO_DELTA
+      return { ...s, power: 'on', bootTimer: 0, screen: 'NORMAL', altDelta }
+    }
     return { ...s, bootTimer: t }
   }
   if (s.power !== 'on') return s
@@ -495,6 +521,9 @@ function onTick(s, dt) {
 
   // gyro-backup derived flag
   next.gyroMode = isGyro(next)
+
+  // EFIS that feed the baro-corrected altitude keep the autopilot auto-synced.
+  if (baroAutoSync(next)) next.altDelta = 0
 
   // SkyView mode: track/altitude/VS are slaved to the SkyView bugs (§10.2).
   if (next.lateralMode === 'SKYVIEW') {

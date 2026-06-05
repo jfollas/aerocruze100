@@ -86,6 +86,15 @@
 .pfd-cdi-fill {
   fill: #28d07a;
 }
+.pfd-cdi-dot {
+  fill: #eef5ff;
+  stroke: none;
+}
+.pfd-cdi-scale {
+  fill: #e641d6;
+  font: 800 8px/1 'Segoe UI', system-ui, sans-serif;
+  letter-spacing: 0.02em;
+}
 .pfd-cdi-src {
   fill: #7fe6b4;
   font: 800 11px/1 'Segoe UI', system-ui, sans-serif;

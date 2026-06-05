@@ -21,7 +21,7 @@ export const PLAN_CHART = {
   e: -41.7992,
   f: 986.2776,
   // icon scale (viewBox units) so the aircraft reads at this page resolution
-  planeScale: 4.6,
+  planeScale: 3.68,
 }
 
 // Map a {x, y} position (nm east/north of the field) to {u, v} pixels on the

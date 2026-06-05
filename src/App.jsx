@@ -3,6 +3,8 @@ import { reducer, initialState } from './sim/machine.js'
 import * as E from './sim/events.js'
 import Device, { VARIANTS } from './components/Device.jsx'
 import ConfigPanel from './components/ConfigPanel.jsx'
+import MasterPanel from './components/MasterPanel.jsx'
+import Pfd from './components/Pfd.jsx'
 import ApproachPanel from './components/ApproachPanel.jsx'
 import './styles/app.css'
 
@@ -89,11 +91,26 @@ export default function App() {
       </header>
 
       <main className="app-main">
-        <Device variant={variant} state={state} dispatch={dispatch} actions={actions} />
-        <ConfigPanel state={state} actions={actions} />
-      </main>
+        {/* Left: autopilot simulator + tabbed systems controls */}
+        <div className="col col-left">
+          <Device variant={variant} state={state} dispatch={dispatch} actions={actions} />
+          <ConfigPanel state={state} actions={actions} />
+        </div>
 
-      <ApproachPanel state={state} actions={actions} />
+        {/* Center: primary flight display + aircraft master */}
+        <div className="col col-center">
+          <div className="cfg-group">
+            <h3>Primary Flight Display</h3>
+            <Pfd state={state} actions={actions} />
+          </div>
+          <MasterPanel state={state} actions={actions} />
+        </div>
+
+        {/* Right: approach plate */}
+        <div className="col col-right">
+          <ApproachPanel state={state} actions={actions} />
+        </div>
+      </main>
 
       <footer className="app-foot">
         <p>

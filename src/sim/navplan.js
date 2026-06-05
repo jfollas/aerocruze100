@@ -21,16 +21,20 @@ export const FAF = 'ZIMBO'
 
 // How aggressively to chase the course line: degrees of intercept per nm of
 // cross-track error, capped at a 45° intercept.
-const XTK_GAIN = 8
+const XTK_GAIN = 45
 const MAX_INTERCEPT = 45
 
-// Standard-rate turn radius (nm) for turn anticipation.
-const turnRadiusNm = (groundSpeed) => Math.max(groundSpeed, 1) / (20 * Math.PI)
+// Standard-rate (3°/sec) turn radius in nm: r = v / (60π).
+const turnRadiusNm = (groundSpeed) => Math.max(groundSpeed, 1) / (60 * Math.PI)
+
+// Heading error (deg) below which we consider the aircraft established on the
+// leg and switch from "turn onto the course" to cross-track fine tracking.
+const ESTABLISHED_DEG = 8
 
 // GPSS guidance for the active leg. Returns the commanded TRUE track to fly,
 // the signed cross-track error (+ = right of course), and whether to sequence
-// to the next leg.
-export function gpssGuidance(plan, legIdx, pos, groundSpeed) {
+// to the next leg. `trackTrue` is the aircraft's current true track.
+export function gpssGuidance(plan, legIdx, pos, groundSpeed, trackTrue) {
   const A = plan[legIdx - 1]
   const B = plan[legIdx]
   const legCourse = bearingToTrue(A, B)
@@ -46,9 +50,18 @@ export function gpssGuidance(plan, legIdx, pos, groundSpeed) {
   const along = relx * ux + rely * uy
   const xtk = uy * relx - ux * rely // + = right of course
 
-  // intercept: steer toward the course, easing to on-course tracking
-  const intercept = Math.max(-MAX_INTERCEPT, Math.min(MAX_INTERCEPT, XTK_GAIN * xtk))
-  const commandedTrackTrue = mod360(legCourse - intercept)
+  // While turning onto the leg (heading well off the course), command the leg
+  // course itself so the standard-rate turn arcs smoothly onto it (a fly-by).
+  // Once roughly established, switch to a cross-track intercept for fine
+  // tracking. (trackTrue may be undefined in unit tests -> behave as established.)
+  const hdgErr = trackTrue == null ? 0 : Math.abs(angleDiff(trackTrue, legCourse))
+  let commandedTrackTrue
+  if (hdgErr > ESTABLISHED_DEG) {
+    commandedTrackTrue = legCourse
+  } else {
+    const intercept = Math.max(-MAX_INTERCEPT, Math.min(MAX_INTERCEPT, XTK_GAIN * xtk))
+    commandedTrackTrue = mod360(legCourse - intercept)
+  }
 
   // sequencing — never sequence off the final leg (B is the last waypoint)
   const isFinalLeg = legIdx >= plan.length - 1
@@ -61,5 +74,8 @@ export function gpssGuidance(plan, legIdx, pos, groundSpeed) {
     sequence = dtg <= Math.max(ata, 0.3) || along >= legLen
   }
 
-  return { commandedTrackTrue, xtkNm: xtk, sequence, nextLegIdx: legIdx + 1 }
+  // TO/FROM: the active waypoint B is ahead (TO) until we fly past it (FROM).
+  const toFrom = along < legLen ? 'TO' : 'FROM'
+
+  return { commandedTrackTrue, xtkNm: xtk, sequence, nextLegIdx: legIdx + 1, toFrom }
 }

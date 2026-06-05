@@ -16,7 +16,8 @@ import {
   mod360,
   VS_RESPONSE,
   ALT_CAPTURE_GAIN,
-  CRUISE_IAS,
+  MAX_BANK,
+  TURN_RATE,
 } from './flight.js'
 import {
   FIX_XY,
@@ -33,6 +34,9 @@ import { PLANS, gpssGuidance } from './navplan.js'
 const FT_PER_NM = 6076.12
 const GS_DOT_FT = 50 // glideslope deviation: feet of error per dot on the GSI
 const APPROACH_IAS = 90 // kt flown on the approach
+// Bank limit that yields a standard-rate (3°/sec) turn in this model, so GPSS
+// fly-by transitions arc onto the next leg like a Garmin 430.
+const GPSS_BANK = MAX_BANK * (3 / TURN_RATE)
 const toRad = (d) => (d * Math.PI) / 180
 const clamp = (x, lo, hi) => Math.max(lo, Math.min(hi, x))
 
@@ -53,12 +57,20 @@ export function stepScenario(s, dt) {
   let targetTrack = s.selTrack
   let activeLeg = s.activeLeg
 
+  patch.cdiDev = 0 // lateral course deviation in dots (+ = course is right, fly right)
+  patch.cdiScale = null // CDI full-scale sensitivity (NM)
+  patch.cdiToFrom = null // TO/FROM flag
   if (onGpss && plan) {
     const legIdx = clamp(s.activeLeg || 1, 1, plan.length - 1)
-    const g = gpssGuidance(plan, legIdx, { x: s.curX, y: s.curY }, gs || APPROACH_IAS)
+    const g = gpssGuidance(plan, legIdx, { x: s.curX, y: s.curY }, gs || APPROACH_IAS, magToTrue(s.curTrack))
     activeLeg = g.sequence ? Math.min(g.nextLegIdx, plan.length - 1) : legIdx
     targetTrack = trueToMag(g.commandedTrackTrue)
     patch.selTrack = Math.round(mod360(targetTrack)) // reflect the GPS course on the bug
+    // course deviation: tighter full-scale on the final approach segment
+    const fullScale = legIdx >= plan.length - 1 ? 0.3 : 1.0
+    patch.cdiDev = clamp(-g.xtkNm / fullScale * 3, -3.5, 3.5) // 3 dots = full scale
+    patch.cdiScale = fullScale
+    patch.cdiToFrom = g.toFrom
   }
   patch.activeLeg = activeLeg
 
@@ -73,7 +85,8 @@ export function stepScenario(s, dt) {
 
   // Steer toward the target track (same eased bank/turn law as the AP).
   if (s.apEngaged && !s.emergencyLevel && !s.gyroMode) {
-    const { bankAngle, curTrack } = lateralStep(s, dt, targetTrack)
+    // GPSS flies fly-by turns at standard rate; manual TRK uses the full bank
+    const { bankAngle, curTrack } = lateralStep(s, dt, targetTrack, onGpss ? GPSS_BANK : MAX_BANK)
     patch.bankAngle = bankAngle
     patch.curTrack = curTrack
   } else if (s.apEngaged && s.emergencyLevel) {
@@ -138,9 +151,9 @@ export function stepScenario(s, dt) {
   patch.agl = patch.curAlt - FIELD_ELEV
 
   // ===== Airspeed & pitch =====
-  const flying = s.groundSpeed > 10
-  const targetIAS = flying ? (s.approachActive ? APPROACH_IAS : CRUISE_IAS) : 0
-  const { curIAS, pitch } = perfStep(s, dt, newVS, targetIAS)
+  // IAS follows the simulated ground speed (set via the speed-tape drag or the
+  // Ground speed control), eased.
+  const { curIAS, pitch } = perfStep(s, dt, newVS, Math.max(0, s.groundSpeed))
   patch.curIAS = curIAS
   patch.pitch = pitch
 

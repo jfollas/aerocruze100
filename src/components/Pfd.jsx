@@ -38,6 +38,12 @@ const GSI_DOT = 0.375 * HSI_R // px from centre to the box edge per dot
 // dots/line travel sit 10% in from the box ends, so the outer dots are contained
 const GSI_PITCH = 0.8 * GSI_DOT
 
+// HSI course-deviation indicator (CDI). 3 dots each side = full-scale
+// deflection (1/3, 2/3, full), the outer dot reaching just inside the inner
+// number labels (radius HSI_R - 18).
+const CDI_DOT = (HSI_R - 24) / 3 // px between deviation dots
+const CDI_DEV_H = 26 // px half-length of the deviation bar / central zone
+
 // scales
 const PPK = 2.4 // px per knot
 const PPF = 0.18 // px per foot
@@ -102,7 +108,7 @@ export default function Pfd({ state, actions }) {
     onPointerDown: (e) => {
       e.currentTarget.setPointerCapture?.(e.pointerId)
       const p = toSvg(e)
-      drag.current = { kind, y0: p.y, alt0: svAltBug, vs0: svVsBug }
+      drag.current = { kind, y0: p.y, alt0: svAltBug, vs0: svVsBug, spd0: state.groundSpeed, cur0: curAlt }
       if (kind === 'hdg') applyHdg(p)
     },
     onPointerMove: (e) => {
@@ -110,8 +116,13 @@ export default function Pfd({ state, actions }) {
       if (!d || d.kind !== kind) return
       const p = toSvg(e)
       if (kind === 'alt') set({ svAltBug: clamp(round(d.alt0 - (p.y - d.y0) / PPF, 100), 0, 17500), svAltBugSet: true })
+      else if (kind === 'altset') set({ curAlt: clamp(round(d.cur0 - (p.y - d.y0) / PPF, 10), 0, 17500), curVS: 0 })
       else if (kind === 'vs') set({ svVsBug: clamp(round(d.vs0 - (p.y - d.y0) / PPV, 100), -1500, 1500) })
-      else if (kind === 'hdg') applyHdg(p)
+      else if (kind === 'spd') {
+        // dragging down speeds the simulated airspeed up; this drives Ground speed
+        const gs = clamp(round(d.spd0 + (p.y - d.y0) / PPK, 1), 0, 250)
+        set({ groundSpeed: gs, curIAS: gs })
+      } else if (kind === 'hdg') applyHdg(p)
     },
     onPointerUp: (e) => {
       drag.current = null
@@ -121,8 +132,12 @@ export default function Pfd({ state, actions }) {
   })
   const wheel = (kind) => (e) => {
     if (kind === 'alt') set({ svAltBug: clamp(round(svAltBug - Math.sign(e.deltaY) * 100, 100), 0, 17500), svAltBugSet: true })
+    else if (kind === 'altset') set({ curAlt: clamp(round(curAlt - Math.sign(e.deltaY) * 100, 100), 0, 17500) })
     else if (kind === 'vs') set({ svVsBug: clamp(round(svVsBug - Math.sign(e.deltaY) * 100, 100), -1500, 1500) })
-    else if (kind === 'hdg') set({ svHeadingBug: Math.round(mod360(svHeadingBug - Math.sign(e.deltaY))) })
+    else if (kind === 'spd') {
+      const gs = clamp(round(state.groundSpeed - Math.sign(e.deltaY) * 5, 1), 0, 250)
+      set({ groundSpeed: gs, curIAS: gs })
+    } else if (kind === 'hdg') set({ svHeadingBug: Math.round(mod360(svHeadingBug - Math.sign(e.deltaY))) })
   }
 
   const cdiSources = ['heading', 'flightplan', 'navaid']
@@ -133,6 +148,16 @@ export default function Pfd({ state, actions }) {
   // track), which is independent of the heading bug; it falls back to the bug
   // when no flight-plan course is available.
   const cdiCourse = skyviewCdi === 'flightplan' && state.gpsDtk != null ? state.gpsDtk : svHeadingBug
+  const cdiDevPx = clamp(state.cdiDev || 0, -3, 3) * CDI_DOT // deviation bar offset (3 dots full scale)
+  // TO/FROM flag: 'TO' points toward the course head, 'FROM' toward the tail
+  // (flips when the active waypoint is behind). Defaults to TO when a course is
+  // shown but no flag is supplied.
+  const cdiToFrom = state.cdiToFrom || (showCdi ? 'TO' : null)
+  // TO/FROM arrowhead: its flat base sits right at the segment break (the edge
+  // of the central deviation zone). TO points up (toward the course head) from
+  // the top break; FROM points down (toward the tail) from the bottom break.
+  const tfBaseY = cdiToFrom === 'FROM' ? HSI_CY + CDI_DEV_H : HSI_CY - CDI_DEV_H
+  const tfApexY = cdiToFrom === 'FROM' ? tfBaseY + 11 : tfBaseY - 11
   const cycleCdi = () => set({ skyviewCdi: cdiSources[(cdiSources.indexOf(skyviewCdi) + 1) % cdiSources.length] })
 
   // bug Y positions (clamped to the tape so an off-scale bug parks at the edge)
@@ -200,9 +225,9 @@ export default function Pfd({ state, actions }) {
         </g>
         <rect x={ATT_X} y={TOP} width={ATT_W} height={H} rx="6" className="pfd-frame" />
 
-        {/* ===== Speed tape ===== */}
-        <rect x={SPD_X} y={TOP} width={SPD_W} height={H} className="pfd-tape" />
-        <g clipPath="url(#spdClip)">
+        {/* ===== Speed tape ===== drag to set the simulated airspeed / ground speed */}
+        <rect x={SPD_X} y={TOP} width={SPD_W} height={H} className="pfd-tape" {...handlers('spd')} onWheel={wheel('spd')} style={{ cursor: 'ns-resize' }} />
+        <g clipPath="url(#spdClip)" pointerEvents="none">
           {range(Math.floor((curIAS - 38) / 5) * 5, Math.ceil((curIAS + 38) / 5) * 5, 5)
             .filter((v) => v >= 0)
             .map((v) => {
@@ -216,7 +241,7 @@ export default function Pfd({ state, actions }) {
               )
             })}
         </g>
-        <g>
+        <g pointerEvents="none">
           <polygon
             points={`${SPD_X},${YC - 9} ${SPD_X + SPD_W - 8},${YC - 9} ${SPD_X + SPD_W},${YC} ${SPD_X + SPD_W - 8},${YC + 9} ${SPD_X},${YC + 9}`}
             className="pfd-readout"
@@ -224,8 +249,9 @@ export default function Pfd({ state, actions }) {
           <text x={SPD_X + SPD_W - 6} y={YC + 4} className="pfd-readout-val" textAnchor="end">{Math.round(curIAS)}</text>
         </g>
 
-        {/* ===== Altitude tape ===== */}
-        <rect x={ALT_X} y={TOP} width={ALT_W} height={H} className="pfd-tape" {...handlers('alt')} onWheel={wheel('alt')} style={{ cursor: 'ns-resize' }} />
+        {/* ===== Altitude tape ===== drag the tape to set the initial altitude;
+            drag the bug to set the altitude target */}
+        <rect x={ALT_X} y={TOP} width={ALT_W} height={H} className="pfd-tape" {...handlers('altset')} onWheel={wheel('altset')} style={{ cursor: 'ns-resize' }} />
         <g clipPath="url(#altClip)" pointerEvents="none">
           {range(Math.floor((curAlt - 520) / 100) * 100, Math.ceil((curAlt + 520) / 100) * 100, 100).map((v) => {
             const y = YC + (curAlt - v) * PPF
@@ -237,8 +263,10 @@ export default function Pfd({ state, actions }) {
             )
           })}
         </g>
-        {/* altitude bug — small vertical marker, notch on the inner side */}
-        {svAltBugSet && <path d={tapeBug(ALT_X, altBugY, 9, 18, 5)} className="pfd-bug" pointerEvents="none" />}
+        {/* altitude bug — small vertical marker, notch on the inner side; drag it to set the target */}
+        {svAltBugSet && (
+          <path d={tapeBug(ALT_X, altBugY, 9, 18, 5)} className="pfd-bug" {...handlers('alt')} onWheel={wheel('alt')} style={{ cursor: 'ns-resize' }} />
+        )}
         {/* numeric value flag — its pointer apex matches the bug notch (ALT_X+4) */}
         <g pointerEvents="none">
           <polygon
@@ -293,13 +321,40 @@ export default function Pfd({ state, actions }) {
             <g transform={`rotate(${svHeadingBug} ${HSI_CX} ${HSI_CY})`}>
               <path d={ringBug(HSI_CX, HSI_CY - HSI_R, 16, 10, 5)} className="pfd-bug" />
             </g>
-            {/* course / CDI needle (points along the active GPS leg / DTK, or the
-                heading bug for other sources); hidden in HDG mode */}
+            {/* course / CDI needle: a fixed course pointer (along the active GPS
+                leg / DTK, or the heading bug for other sources) plus a middle
+                deviation bar that breaks away from a perpendicular dot scale by
+                the cross-track error. Hidden in HDG mode. */}
             {showCdi && (
               <g transform={`rotate(${cdiCourse} ${HSI_CX} ${HSI_CY})`}>
-                <line x1={HSI_CX} y1={HSI_CY - HSI_R + 14} x2={HSI_CX} y2={HSI_CY - 22} className="pfd-cdi" style={{ stroke: cdiColor }} />
-                <line x1={HSI_CX} y1={HSI_CY + 22} x2={HSI_CX} y2={HSI_CY + HSI_R - 14} className="pfd-cdi" style={{ stroke: cdiColor }} />
+                {/* course pointer: arrowhead, foreshaft, and tail */}
                 <polygon points={`${HSI_CX},${HSI_CY - HSI_R + 6} ${HSI_CX - 5},${HSI_CY - HSI_R + 16} ${HSI_CX + 5},${HSI_CY - HSI_R + 16}`} className="pfd-cdi-fill" style={{ fill: cdiColor }} />
+                <line x1={HSI_CX} y1={HSI_CY - HSI_R + 16} x2={HSI_CX} y2={HSI_CY - CDI_DEV_H} className="pfd-cdi" style={{ stroke: cdiColor }} />
+                <line x1={HSI_CX} y1={HSI_CY + CDI_DEV_H} x2={HSI_CX} y2={HSI_CY + HSI_R - 14} className="pfd-cdi" style={{ stroke: cdiColor }} />
+                {/* perpendicular deviation scale: 3 dots = full scale, but only
+                    the 1/3 and 2/3 dots are drawn (the outer full-scale dot at
+                    the labels is omitted) */}
+                {[-2, -1, 1, 2].map((i) => (
+                  <circle key={i} cx={HSI_CX + i * CDI_DOT} cy={HSI_CY} r="2.1" className="pfd-cdi-dot" />
+                ))}
+                {/* deviation bar — the breakaway middle segment */}
+                <line
+                  x1={HSI_CX + cdiDevPx}
+                  y1={HSI_CY - CDI_DEV_H}
+                  x2={HSI_CX + cdiDevPx}
+                  y2={HSI_CY + CDI_DEV_H}
+                  className="pfd-cdi"
+                  style={{ stroke: cdiColor }}
+                />
+                {/* TO/FROM arrowhead — stays on the course pointer (not the
+                    breakaway bar); above centre (up) for TO, below (down) for FROM */}
+                {cdiToFrom && (
+                  <polygon
+                    points={`${HSI_CX},${tfApexY} ${HSI_CX - 5},${tfBaseY} ${HSI_CX + 5},${tfBaseY}`}
+                    className="pfd-cdi-fill"
+                    style={{ fill: cdiColor }}
+                  />
+                )}
               </g>
             )}
           </g>
@@ -321,6 +376,12 @@ export default function Pfd({ state, actions }) {
             strokeLinejoin="round"
             pointerEvents="none"
           />
+          {/* CDI full-scale sensitivity */}
+          {showCdi && state.cdiScale != null && (
+            <text x={HSI_CX + 20} y={HSI_CY + 26} className="pfd-cdi-scale" textAnchor="start" pointerEvents="none">
+              {state.cdiScale.toFixed(1)} NM
+            </text>
+          )}
         </g>
         {/* heading flag — readout box and notch-filling pointer as one continuous shape */}
         <g pointerEvents="none">

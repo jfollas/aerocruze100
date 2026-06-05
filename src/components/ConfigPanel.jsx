@@ -1,8 +1,5 @@
-import { useRef } from 'react'
-import Pfd from './Pfd.jsx'
+import { useState } from 'react'
 import '../styles/config.css'
-
-const CWS_HOLD_MS = 350 // held longer than this => CWS mode; shorter => a tap (disengage)
 
 // The autopilot accepts one nav source at a time. In our aircraft a panel
 // selector switch discretely picks between the Dynon SkyView and the Garmin
@@ -47,185 +44,119 @@ function Seg({ label, value, options, onChange }) {
   )
 }
 
+// Tabbed systems card: NAV SOURCE (what's feeding the autopilot) and INDUCE
+// CONDITIONS (outlier signals to trigger for familiarization).
 export default function ConfigPanel({ state, actions }) {
   const set = actions.setConfig
-  const on = state.power === 'on' // fully powered (CWS / LEVEL available)
-  const powerUp = state.power !== 'off' // switch position (up while booting too)
-
-  // CWS: a quick tap disengages the AP; holding enters CWS mode (release resumes).
-  const cws = useRef({ down: false, holding: false, timer: null })
-  const cwsDown = (e) => {
-    e.currentTarget.setPointerCapture?.(e.pointerId)
-    cws.current.down = true
-    cws.current.holding = false
-    cws.current.timer = setTimeout(() => {
-      cws.current.holding = true
-      actions.cwsPress()
-    }, CWS_HOLD_MS)
-  }
-  const cwsUp = () => {
-    if (!cws.current.down) return
-    cws.current.down = false
-    clearTimeout(cws.current.timer)
-    if (cws.current.holding) {
-      actions.cwsRelease()
-      cws.current.holding = false
-    } else {
-      actions.cwsTap()
-    }
-  }
+  const on = state.power === 'on'
+  const [tab, setTab] = useState('nav')
 
   return (
-    <div className="config">
-      <div className="cfg-group">
-        <h3>Aircraft master</h3>
-        <div className="master-panel">
-          <div className="master-ctl">
-            <button
-              className="cws-btn"
-              disabled={!on}
-              onPointerDown={cwsDown}
-              onPointerUp={cwsUp}
-              onPointerCancel={cwsUp}
-              aria-label="Control Wheel Steering — tap to disengage, hold to maneuver"
-              title="CWS — tap to disengage the autopilot; hold to maneuver, release to resume"
-            />
-            <span className="master-cap">CWS</span>
-          </div>
-
-          <div className="master-ctl">
-            <button
-              className={'power-toggle' + (powerUp ? ' on' : '')}
-              role="switch"
-              aria-checked={powerUp}
-              aria-label="Power master switch"
-              title="Power — flip up for ON, down for OFF"
-              onClick={() => set({ power: powerUp ? 'off' : 'on' })}
-            >
-              <span className="toggle-track">
-                <span className="toggle-lever" />
-              </span>
-            </button>
-            <span className="master-cap">PWR · {powerUp ? 'ON' : 'OFF'}</span>
-          </div>
-
-          <div className="master-ctl">
-            <button
-              className="level-btn"
-              disabled={!on}
-              onClick={actions.apLvl}
-              aria-label="Emergency Level"
-              title="Emergency Level"
-            >
-              LEVEL
-            </button>
-            <span className="master-cap">LEVEL</span>
-          </div>
-        </div>
+    <div className="cfg-group cfg-tabs-card">
+      <div className="cfg-tabs" role="tablist">
+        <button role="tab" aria-selected={tab === 'nav'} className={'cfg-tab' + (tab === 'nav' ? ' active' : '')} onClick={() => setTab('nav')}>
+          Nav source
+        </button>
+        <button role="tab" aria-selected={tab === 'induce'} className={'cfg-tab' + (tab === 'induce' ? ' active' : '')} onClick={() => setTab('induce')}>
+          Induce conditions
+        </button>
       </div>
 
-      <div className="cfg-group">
-        <h3>Glass cockpit</h3>
-        <Pfd state={state} actions={actions} />
-      </div>
-
-      <div className="cfg-group">
-        <h3>Nav source (panel selector)</h3>
-        <Seg
-          label="Source"
-          value={navSourceOf(state)}
-          options={[
-            { value: 'gns430w', text: 'GNS430W' },
-            { value: 'skyview', text: 'SkyView' },
-            { value: 'portable', text: 'Portable' },
-            { value: 'aspen', text: 'Aspen' },
-            { value: 'g5', text: 'G5' },
-            { value: 'none', text: 'None' },
-          ]}
-          onChange={(p) => set(NAV_SOURCES[p])}
-        />
-        <Seg
-          label="GPS signal"
-          value={state.gpsStatus}
-          options={[
-            { value: 'NOGPS', text: 'None' },
-            { value: 'NOFIX', text: 'No fix' },
-            { value: 'OK', text: 'OK' },
-          ]}
-          onChange={(p) => set({ gpsStatus: p })}
-        />
-        <Seg
-          label="Ground speed"
-          value={state.groundSpeed > 10 ? 'fly' : 'gnd'}
-          options={[
-            { value: 'gnd', text: '< 10 kt' },
-            { value: 'fly', text: '> 10 kt' },
-          ]}
-          onChange={(p) => set({ groundSpeed: p === 'fly' ? 120 : 0 })}
-        />
-        {state.gpsData === 'ifr' && (
+      {tab === 'nav' && (
+        <div className="cfg-tab-body">
           <Seg
-            label="LPV approach"
-            value={state.approachActive ? 'yes' : 'no'}
+            label="Source"
+            value={navSourceOf(state)}
             options={[
-              { value: 'no', text: 'Off' },
-              { value: 'yes', text: 'Active' },
+              { value: 'gns430w', text: 'GNS430W' },
+              { value: 'skyview', text: 'SkyView' },
+              { value: 'portable', text: 'Portable' },
+              { value: 'aspen', text: 'Aspen' },
+              { value: 'g5', text: 'G5' },
+              { value: 'none', text: 'None' },
             ]}
-            onChange={(p) => set({ approachActive: p === 'yes' })}
+            onChange={(p) => set(NAV_SOURCES[p])}
           />
-        )}
-      </div>
-
-      <div className="cfg-group">
-        <h3>Induce conditions</h3>
-        <Seg
-          label="Trim"
-          value={state.trim}
-          options={[
-            { value: 'none', text: 'OK' },
-            { value: 'up', text: 'Up' },
-            { value: 'dn', text: 'Down' },
-          ]}
-          onChange={(p) => set({ trim: p })}
-        />
-        <Seg
-          label="Airspeed"
-          value={state.warning === 'MIN_AS' ? 'min' : state.warning === 'MAX_AS' ? 'max' : 'ok'}
-          options={[
-            { value: 'ok', text: 'Normal' },
-            { value: 'min', text: 'Min AS' },
-            { value: 'max', text: 'Max AS' },
-          ]}
-          onChange={(p) => set({ warning: p === 'min' ? 'MIN_AS' : p === 'max' ? 'MAX_AS' : null })}
-        />
-        <div className="cfg-row">
-          <span className="cfg-label">Bank (AEP)</span>
-          <input
-            type="range"
-            min="0"
-            max="60"
-            value={Math.abs(state.inducedBank)}
-            disabled={state.apEngaged}
-            onChange={(e) => set({ inducedBank: Number(e.target.value) })}
-          />
-          <span className="cfg-val">{Math.abs(Math.round(state.bankAngle))}°</span>
+          {state.gpsData === 'ifr' && (
+            <Seg
+              label="LPV approach"
+              value={state.approachActive ? 'yes' : 'no'}
+              options={[
+                { value: 'no', text: 'Off' },
+                { value: 'yes', text: 'Active' },
+              ]}
+              onChange={(p) => set({ approachActive: p === 'yes' })}
+            />
+          )}
         </div>
-        <div className="cfg-row">
-          <span className="cfg-label">Sensor</span>
-          <div className="cfg-seg">
-            <button
-              className="cfg-opt"
-              disabled={!on || state.warning === 'SENSOR'}
-              onClick={() => set({ warning: 'SENSOR' })}
-            >
-              Trigger error
-            </button>
-            <button className="cfg-opt" disabled={!on} onClick={() => set({ power: 'off' })}>
-              Power cycle
-            </button>
+      )}
+
+      {tab === 'induce' && (
+        <div className="cfg-tab-body">
+          <Seg
+            label="GPS signal"
+            value={state.gpsStatus}
+            options={[
+              { value: 'NOGPS', text: 'None' },
+              { value: 'NOFIX', text: 'No fix' },
+              { value: 'OK', text: 'OK' },
+            ]}
+            onChange={(p) => set({ gpsStatus: p })}
+          />
+          <Seg
+            label="Ground speed"
+            value={state.groundSpeed > 10 ? 'fly' : 'gnd'}
+            options={[
+              { value: 'gnd', text: '< 10 kt' },
+              { value: 'fly', text: '> 10 kt' },
+            ]}
+            onChange={(p) => set({ groundSpeed: p === 'fly' ? 120 : 0 })}
+          />
+          <Seg
+            label="Trim"
+            value={state.trim}
+            options={[
+              { value: 'none', text: 'OK' },
+              { value: 'up', text: 'Up' },
+              { value: 'dn', text: 'Down' },
+            ]}
+            onChange={(p) => set({ trim: p })}
+          />
+          <Seg
+            label="Airspeed"
+            value={state.warning === 'MIN_AS' ? 'min' : state.warning === 'MAX_AS' ? 'max' : 'ok'}
+            options={[
+              { value: 'ok', text: 'Normal' },
+              { value: 'min', text: 'Min AS' },
+              { value: 'max', text: 'Max AS' },
+            ]}
+            onChange={(p) => set({ warning: p === 'min' ? 'MIN_AS' : p === 'max' ? 'MAX_AS' : null })}
+          />
+          <div className="cfg-row">
+            <span className="cfg-label">Bank (AEP)</span>
+            <input
+              type="range"
+              min="0"
+              max="60"
+              value={Math.abs(state.inducedBank)}
+              disabled={state.apEngaged}
+              onChange={(e) => set({ inducedBank: Number(e.target.value) })}
+            />
+            <span className="cfg-val">{Math.abs(Math.round(state.bankAngle))}°</span>
+          </div>
+          <div className="cfg-row">
+            <span className="cfg-label">Sensor</span>
+            <div className="cfg-seg">
+              <button className="cfg-opt" disabled={!on || state.warning === 'SENSOR'} onClick={() => set({ warning: 'SENSOR' })}>
+                Trigger error
+              </button>
+              <button className="cfg-opt" disabled={!on} onClick={() => set({ power: 'off' })}>
+                Power cycle
+              </button>
+            </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   )
 }
