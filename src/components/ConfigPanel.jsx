@@ -68,7 +68,7 @@ export default function ConfigPanel({ state, actions }) {
             label="Source"
             value={navSourceOf(state)}
             options={[
-              { value: 'gns430w', text: 'GNS430W' },
+              { value: 'gns430w', text: '430W' },
               { value: 'skyview', text: 'SkyView' },
               { value: 'portable', text: 'Portable' },
               { value: 'aspen', text: 'Aspen' },

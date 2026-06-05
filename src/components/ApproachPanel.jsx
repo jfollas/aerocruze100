@@ -5,7 +5,17 @@ import '../styles/approach.css'
 const IAFS = [
   { id: 'LEYIR', text: 'LEYIR (N)' },
   { id: 'WUDAT', text: 'WUDAT (S)' },
+  { id: 'UBAYA_DIRECT', text: 'UBAYA·direct (W)' },
+  { id: 'UBAYA_TEARDROP', text: 'UBAYA·teardrop (SE)' },
+  { id: 'UBAYA_PARALLEL', text: 'UBAYA·parallel (NE)' },
 ]
+
+const iafLabel = (id) =>
+  ({
+    UBAYA_DIRECT: 'UBAYA',
+    UBAYA_TEARDROP: 'UBAYA',
+    UBAYA_PARALLEL: 'UBAYA',
+  })[id] || id || '—'
 
 // Practice flying the RNAV (GPS) RWY 10 into Wood County Regional (1G0) on the
 // to-scale chart. How the aircraft is flown depends on how the autopilot is set
@@ -58,7 +68,8 @@ export default function ApproachPanel({ state, actions }) {
         <ApproachMap state={state} />
         <div className="apch-side">
           <div className="apch-status">
-            <span><b>IAF</b> {state.scenarioIaf || '—'}</span>
+            <span><b>IAF</b> {active ? iafLabel(state.scenarioIaf) : '—'}</span>
+            {state.hilptEntry && <span><b>HILPT</b> {state.hilptEntry}</span>}
             <span><b>Alt</b> {active ? Math.round(state.curAlt) + '′' : '—'}</span>
             <span><b>AGL</b> {active && state.agl != null ? Math.round(state.agl) + '′' : '—'}</span>
             <span><b>Vert</b> {active ? vmLabel : '—'}</span>

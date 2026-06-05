@@ -12,9 +12,88 @@ const wp = (name) => ({ name, ...FIX_XY[name] })
 // Common final tail: UBAYA -> ZIMBO (FAF) -> RW10 (threshold/MAP).
 const TAIL = ['UBAYA', 'ZIMBO', 'RW10']
 
+// ---- UBAYA hold-in-lieu-of-procedure-turn (HILPT) ----
+// As charted: a RIGHT-turn racetrack with the inbound leg on the 096° final
+// approach course and the racetrack south of it (holding side = south), 4 NM
+// legs. Depending on the arrival direction the 430W flies a direct, teardrop,
+// or parallel entry, ending established inbound at UBAYA to continue
+// UBAYA -> ZIMBO -> RW10.
+const HOLD_LEG = 4 // nm
+const HOLD_R = 0.55 // nm, ~standard-rate turn radius at hold speed
+const U = FIX_XY.UBAYA
+const INB_T = bearingToTrue(U, FIX_XY.ZIMBO) // inbound course (true)
+const rad = (d) => (d * Math.PI) / 180
+const unit = (degTrue) => ({ x: Math.sin(rad(degTrue)), y: Math.cos(rad(degTrue)) })
+const add = (p, v, s = 1) => ({ x: p.x + v.x * s, y: p.y + v.y * s })
+const E_IN = unit(INB_T)
+const E_OUT = unit(INB_T + 180)
+const HOLD_SIDE = unit(INB_T + 90) // right of inbound = south (the holding side)
+
+// Racetrack (right turns), smoothed into an oval by the fly-by: cross UBAYA,
+// right to the outbound leg (south of the inbound line), around to the inbound
+// leg, back in to UBAYA.
+const B1 = add(U, HOLD_SIDE, 2 * HOLD_R) // outbound leg start (abeam UBAYA, south)
+const B2 = add(B1, E_OUT, HOLD_LEG) // outbound leg end
+const A = add(U, E_OUT, HOLD_LEG) // inbound leg start (4 NM west of UBAYA)
+const uwp = { name: 'UBAYA', ...U }
+const tail = TAIL.slice(1).map(wp) // ZIMBO, RW10 (after re-crossing UBAYA inbound)
+
+// Direct: arrive from the west on the inbound course; turn right into the hold,
+// fly one lap, roll out inbound.
+const directPlan = [
+  { name: 'START', ...add(U, E_IN, -5) },
+  uwp,
+  { name: 'hold', ...B1 },
+  { name: 'hold', ...B2 },
+  { name: 'hold', ...A },
+  uwp,
+  ...tail,
+]
+// Teardrop: arrive from the SE (holding side); cross UBAYA, fly the 30°-offset
+// teardrop into the holding side, then turn back onto the inbound leg.
+const TD = add(U, unit(INB_T + 150), HOLD_LEG) // 30° off the outbound, toward the south
+const teardropPlan = [
+  { name: 'START', ...add(U, unit(INB_T + 45), 5) },
+  uwp,
+  { name: 'td', ...TD },
+  { name: 'hold', ...A },
+  uwp,
+  ...tail,
+]
+// Parallel: arrive from the NE (non-holding side); cross UBAYA, parallel the
+// outbound course on the north side, then turn back to intercept inbound.
+const PAR = add(add(U, E_OUT, HOLD_LEG), HOLD_SIDE, -2 * HOLD_R) // 4 NM west, offset north
+const parallelPlan = [
+  { name: 'START', ...add(U, unit(INB_T - 45), 5) },
+  uwp,
+  { name: 'pl', ...PAR },
+  uwp,
+  ...tail,
+]
+
 export const PLANS = {
   LEYIR: ['LEYIR', ...TAIL].map(wp),
   WUDAT: ['WUDAT', ...TAIL].map(wp),
+  UBAYA_DIRECT: directPlan,
+  UBAYA_TEARDROP: teardropPlan,
+  UBAYA_PARALLEL: parallelPlan,
+}
+
+// The HILPT entry each UBAYA plan flies (for annunciation).
+export const PLAN_ENTRY = {
+  UBAYA_DIRECT: 'DIRECT',
+  UBAYA_TEARDROP: 'TEARDROP',
+  UBAYA_PARALLEL: 'PARALLEL',
+}
+
+// Which HILPT entry the 430W computes for an arrival position relative to UBAYA:
+// west of the fix -> direct; east + holding side (south) -> teardrop; east +
+// non-holding side (north) -> parallel.
+export function holdEntry(pos) {
+  const along = (pos.x - U.x) * E_IN.x + (pos.y - U.y) * E_IN.y
+  const cross = (pos.x - U.x) * HOLD_SIDE.x + (pos.y - U.y) * HOLD_SIDE.y
+  if (along < 0) return 'DIRECT'
+  return cross > 0 ? 'TEARDROP' : 'PARALLEL'
 }
 
 export const FAF = 'ZIMBO'
@@ -68,7 +147,8 @@ export function gpssGuidance(plan, legIdx, pos, groundSpeed, trackTrue) {
   let sequence = false
   if (!isFinalLeg) {
     const nextCourse = bearingToTrue(B, plan[legIdx + 1])
-    const turn = Math.abs(angleDiff(legCourse, nextCourse))
+    // cap the course change so tight hold turns (>=90°) don't blow up the lead
+    const turn = Math.min(Math.abs(angleDiff(legCourse, nextCourse)), 120)
     const ata = turnRadiusNm(groundSpeed) * Math.tan((turn / 2) * (Math.PI / 180))
     const dtg = nmBetween(pos, B)
     sequence = dtg <= Math.max(ata, 0.3) || along >= legLen

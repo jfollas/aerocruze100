@@ -6,7 +6,7 @@ import * as E from './events.js'
 import { stepFlight, mod360 } from './flight.js'
 import { stepScenario } from './scenario.js'
 import { FIX_XY, FIELD_ELEV, bearingToTrue, trueToMag } from './geo.js'
-import { PLANS } from './navplan.js'
+import { PLANS, PLAN_ENTRY } from './navplan.js'
 
 const clamp = (x, lo, hi) => Math.max(lo, Math.min(hi, x))
 const round = (x, step) => Math.round(x / step) * step
@@ -75,7 +75,8 @@ export const initialState = {
   // RNAV (GPS) RWY 10 scenario (to-scale map + profile). When active, the
   // position-based scenario engine flies the published approach.
   scenarioActive: false,
-  scenarioIaf: null, // 'LEYIR' | 'WUDAT' — chosen initial approach fix
+  scenarioIaf: null, // chosen entry: LEYIR | WUDAT | UBAYA_DIRECT | UBAYA_TEARDROP | UBAYA_PARALLEL
+  hilptEntry: null, // UBAYA hold-in-lieu entry: DIRECT | TEARDROP | PARALLEL | null
   curX: 0, // aircraft position east of the field (nm)
   curY: 0, // aircraft position north of the field (nm)
   activeLeg: 0, // index of the active leg in PLANS[scenarioIaf]
@@ -178,7 +179,7 @@ function applyConfig(state, patch) {
   if (fields.scenarioActive === true) {
     s = startScenario(s, fields.scenarioIaf || s.scenarioIaf)
   } else if (fields.scenarioActive === false) {
-    s = { ...s, gpsDtk: null, cdiDev: 0, cdiScale: null, cdiToFrom: null }
+    s = { ...s, gpsDtk: null, cdiDev: 0, cdiScale: null, cdiToFrom: null, hilptEntry: null }
   }
   // Inducing a sensor error disengages and latches until power cycle (§8.4)
   if (fields.warning === 'SENSOR') {
@@ -223,12 +224,13 @@ function keepConfig(s) {
 function startScenario(s, iaf) {
   const plan = PLANS[iaf]
   if (!plan) return { ...s, scenarioActive: false, scenarioIaf: null }
-  const p0 = FIX_XY[iaf]
+  const p0 = plan[0] // first waypoint (a fix, or a synthetic HILPT start)
   const crsMag = Math.round(trueToMag(bearingToTrue(plan[0], plan[1])))
   return {
     ...s,
     scenarioActive: true,
     scenarioIaf: iaf,
+    hilptEntry: PLAN_ENTRY[iaf] || null, // 'DIRECT' | 'TEARDROP' | 'PARALLEL' | null
     approachActive: true,
     skyviewCdi: 'flightplan', // show the GPS course needle & glideslope on the PFD
     curX: p0.x,
@@ -429,7 +431,10 @@ function confirmAltSelect(s) {
   if (Math.abs(s.selAlt - s.curAlt) < 50) {
     return { ...s, screen: 'NORMAL', verticalMode: 'ALTHOLD', cursor: 'track' }
   }
-  const synced = Math.abs(s.selVS) >= 400 ? round(s.selVS, 100) : 500
+  // SEL VS direction always follows the altitude change (descend = down); the
+  // magnitude is the entered rate, or 500 fpm if too shallow / unset (§5.4.4).
+  const mag = Math.abs(s.selVS) >= 400 ? Math.abs(round(s.selVS, 100)) : 500
+  const synced = (s.selAlt < s.curAlt ? -1 : 1) * mag
   return { ...s, screen: 'NORMAL', verticalMode: 'SEL', selVS: synced, cursor: 'track' }
 }
 
@@ -446,7 +451,10 @@ function engage(s) {
   let selVS = round(s.curVS, 100)
   if (s.preselectArmed && Math.abs(s.selAlt - s.curAlt) >= 50) {
     verticalMode = 'SEL'
-    selVS = Math.abs(s.curVS) >= 400 ? round(s.curVS, 100) : 500 // §5.4.4
+    // §5.4.4: sync to the current VS, defaulting to 500 fpm, but always in the
+    // direction of the selected altitude (descend = down).
+    const mag = Math.abs(s.curVS) >= 400 ? Math.abs(round(s.curVS, 100)) : 500
+    selVS = (s.selAlt < s.curAlt ? -1 : 1) * mag
   }
   return {
     ...s,

@@ -116,7 +116,7 @@ export function stepScenario(s, dt) {
   let lpvPhase = null
   if (onApproach) {
     const onFinal = activeLeg >= plan.length - 1 // sequenced past ZIMBO onto the final
-    const armed = activeLeg >= 2 // on UBAYA->ZIMBO or beyond
+    const armed = activeLeg >= plan.length - 2 // on the UBAYA -> ZIMBO leg or beyond
     // Couple at the FAF when level/descending (not while flying a missed-approach
     // climb, which leaves verticalMode as SVS with a positive selVS).
     const readyToCouple =

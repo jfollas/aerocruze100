@@ -1,11 +1,38 @@
 import { describe, it, expect } from 'vitest'
-import { PLANS, gpssGuidance } from './navplan.js'
+import { PLANS, gpssGuidance, holdEntry, PLAN_ENTRY } from './navplan.js'
 import { FIX_XY, bearingToTrue } from './geo.js'
 
 describe('flight plans', () => {
   it('LEYIR and WUDAT both feed UBAYA -> ZIMBO -> RW10', () => {
     expect(PLANS.LEYIR.map((w) => w.name)).toEqual(['LEYIR', 'UBAYA', 'ZIMBO', 'RW10'])
     expect(PLANS.WUDAT.map((w) => w.name)).toEqual(['WUDAT', 'UBAYA', 'ZIMBO', 'RW10'])
+  })
+
+  it('the UBAYA HILPT plans end with the inbound UBAYA -> ZIMBO -> RW10', () => {
+    for (const k of ['UBAYA_DIRECT', 'UBAYA_TEARDROP', 'UBAYA_PARALLEL']) {
+      const tail = PLANS[k].slice(-3).map((w) => w.name)
+      expect(tail).toEqual(['UBAYA', 'ZIMBO', 'RW10'])
+    }
+  })
+})
+
+describe('HILPT entry (matches the FAA right-turn hold, holding side south)', () => {
+  const U = FIX_XY.UBAYA
+  const e = (degTrue, nm) => ({ x: U.x + nm * Math.sin((degTrue * Math.PI) / 180), y: U.y + nm * Math.cos((degTrue * Math.PI) / 180) })
+
+  it('west of the fix -> direct', () => {
+    expect(holdEntry(e(270, 5))).toBe('DIRECT') // due west
+  })
+  it('east + south (holding side) -> teardrop', () => {
+    expect(holdEntry(e(135, 5))).toBe('TEARDROP') // southeast
+  })
+  it('east + north (non-holding side) -> parallel', () => {
+    expect(holdEntry(e(45, 5))).toBe('PARALLEL') // northeast
+  })
+  it('each UBAYA plan starts in its named entry sector', () => {
+    for (const k of Object.keys(PLAN_ENTRY)) {
+      expect(holdEntry(PLANS[k][0])).toBe(PLAN_ENTRY[k])
+    }
   })
 })
 
