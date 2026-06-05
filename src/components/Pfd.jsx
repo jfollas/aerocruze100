@@ -49,6 +49,24 @@ const polar = (cx, cy, r, deg) => {
   return [cx + r * Math.cos(a), cy + r * Math.sin(a)]
 }
 
+// Notched-rectangle bug for a vertical tape: left edge at x0 (the value line),
+// body extending right by w; a triangular notch is cut into the left edge,
+// centred on y, opening toward the scale.
+const tapeBug = (x0, y, w, h, n) => {
+  const t = y - h / 2
+  const bm = y + h / 2
+  return `M${x0 + w} ${t} L${x0} ${t} L${x0} ${y - n} L${x0 + n} ${y} L${x0} ${y + n} L${x0} ${bm} L${x0 + w} ${bm} Z`
+}
+
+// Notched-rectangle bug for the HSI rim: a rectangle whose bottom edge (at the
+// rim) has a triangular notch cut into it, opening inward toward the centre.
+const ringBug = (cx, top, w, h, n) => {
+  const l = cx - w / 2
+  const r = cx + w / 2
+  const bot = top + h
+  return `M${l} ${top} L${r} ${top} L${r} ${bot} L${cx + n} ${bot} L${cx} ${bot - n} L${cx - n} ${bot} L${l} ${bot} Z`
+}
+
 export default function Pfd({ state, actions }) {
   const set = actions.setConfig
   const svgRef = useRef(null)
@@ -203,11 +221,7 @@ export default function Pfd({ state, actions }) {
         {/* altitude bug */}
         {svAltBugSet && (
           <g pointerEvents="none">
-            <path
-              d={`M${ALT_X} ${altBugY - 6} h7 v-3 h${ALT_W - 7} v18 h-${ALT_W - 7} v-3 h-7 z`}
-              className="pfd-bug"
-              transform={`translate(0 -3)`}
-            />
+            <path d={tapeBug(ALT_X, altBugY, ALT_W, 16, 5)} className="pfd-bug" />
             <text x={ALT_X + ALT_W - 4} y={altBugY + 3} className="pfd-bug-val" textAnchor="end">{svAltBug}</text>
           </g>
         )}
@@ -235,7 +249,7 @@ export default function Pfd({ state, actions }) {
           {/* current VS pointer */}
           <line x1={VS_X} y1={vsY} x2={VS_X + VS_W} y2={vsY} className="pfd-vs-ptr" />
           {/* VS bug */}
-          <polygon points={`${VS_X},${vsBugY} ${VS_X + 8},${vsBugY - 5} ${VS_X + 8},${vsBugY + 5}`} className="pfd-bug" />
+          <path d={tapeBug(VS_X, vsBugY, VS_W, 12, 4)} className="pfd-bug" />
         </g>
 
         {/* ===== HSI ===== */}
@@ -258,7 +272,7 @@ export default function Pfd({ state, actions }) {
             })}
             {/* heading bug */}
             <g transform={`rotate(${svHeadingBug} ${HSI_CX} ${HSI_CY})`}>
-              <polygon points={`${HSI_CX - 6},${HSI_CY - HSI_R} ${HSI_CX + 6},${HSI_CY - HSI_R} ${HSI_CX + 6},${HSI_CY - HSI_R + 7} ${HSI_CX},${HSI_CY - HSI_R + 12} ${HSI_CX - 6},${HSI_CY - HSI_R + 7}`} className="pfd-bug" />
+              <path d={ringBug(HSI_CX, HSI_CY - HSI_R - 9, 16, 10, 5)} className="pfd-bug" />
             </g>
             {/* course / CDI needle (points along the heading bug) */}
             <g transform={`rotate(${svHeadingBug} ${HSI_CX} ${HSI_CY})`}>
