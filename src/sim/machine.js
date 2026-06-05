@@ -50,6 +50,9 @@ export const initialState = {
   arinc: 'none', // none | aspen (A) | g5 (E)
   approachActive: false,
   glideslopeFlagged: false,
+  lpvPhase: null, // LPV approach phase: null | TURN | ARM | CPLD
+  gsDist: null, // NM to the threshold while on the LPV approach
+  gsDev: 0, // glideslope deviation in dots (+ = beam above, fly up); for the GSI
   inducedBank: 0, // for AEP demonstration while disengaged
   trim: 'none', // none | up | dn — trim annunciation (§4.3)
 

@@ -51,6 +51,12 @@
   fill: #ffffff;
   font: 800 12px/1 'Segoe UI', system-ui, sans-serif;
 }
+/* narrower VS tape needs a smaller readout to fit */
+.pfd-readout-vs {
+  fill: #ffffff;
+  font: 800 9px/1 'Segoe UI', system-ui, sans-serif;
+  font-variant-numeric: tabular-nums;
+}
 
 /* cyan bugs */
 .pfd-bug {
@@ -61,10 +67,6 @@
 .pfd-bug-val {
   fill: #05222a;
   font: 800 8px/1 'Segoe UI', system-ui, sans-serif;
-}
-.pfd-vs-ptr {
-  stroke: #19d2e6;
-  stroke-width: 2.4;
 }
 
 /* HSI */
@@ -79,7 +81,7 @@
 }
 .pfd-cdi {
   stroke: #28d07a;
-  stroke-width: 2.2;
+  stroke-width: 3;
 }
 .pfd-cdi-fill {
   fill: #28d07a;
@@ -88,6 +90,35 @@
   fill: #7fe6b4;
   font: 800 11px/1 'Segoe UI', system-ui, sans-serif;
   letter-spacing: 0.05em;
+}
+
+/* LPV glideslope indicator (right of the HSI) */
+.pfd-gsi-scale {
+  fill: rgba(10, 16, 24, 0.72);
+  stroke: #6b7c91;
+  stroke-width: 1;
+}
+.pfd-gsi-dot {
+  fill: #ffffff;
+  stroke: none;
+}
+.pfd-gsi-ctr {
+  stroke: #ffffff;
+  stroke-width: 4;
+}
+.pfd-gsi-gs {
+  stroke: #e641d6;
+  stroke-width: 4;
+}
+.pfd-gsi-lbl {
+  fill: #d2dded;
+  font: 700 8px/1 'Segoe UI', system-ui, sans-serif;
+  letter-spacing: 0.05em;
+}
+.pfd-gsi-ann {
+  fill: #e641d6;
+  font: 800 8px/1 'Segoe UI', system-ui, sans-serif;
+  letter-spacing: 0.04em;
 }
 
 /* bug chips / controls below the SVG */

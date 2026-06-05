@@ -125,7 +125,7 @@ export default function ConfigPanel({ state, actions }) {
       </div>
 
       <div className="cfg-group">
-        <h3>Glass cockpit (Dynon SkyView)</h3>
+        <h3>Glass cockpit</h3>
         <Pfd state={state} actions={actions} />
       </div>
 

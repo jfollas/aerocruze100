@@ -31,6 +31,13 @@ const HSI_CX = VB_W / 2
 const HSI_CY = 294
 const HSI_R = 84
 
+// LPV glideslope indicator (vertical), sits just right of the HSI ring
+const GSI_X = HSI_CX + HSI_R + 18
+// 2 dots each side, so the box (4 dots) spans 75% of the HSI diameter
+const GSI_DOT = 0.375 * HSI_R // px from centre to the box edge per dot
+// dots/line travel sit 10% in from the box ends, so the outer dots are contained
+const GSI_PITCH = 0.8 * GSI_DOT
+
 // scales
 const PPK = 2.4 // px per knot
 const PPF = 0.18 // px per foot
@@ -75,6 +82,11 @@ export default function Pfd({ state, actions }) {
 
   const { curIAS, curAlt, curVS, pitch, bankAngle, curTrack } = state
   const { svHeadingBug, svAltBug, svAltBugSet, svVsBug, skyviewCdi } = state
+  const { approachActive, gsDev, lpvPhase } = state
+  // GSI appears once established on the approach course (glideslope armed/coupled)
+  const showGs = approachActive && skyviewCdi === 'flightplan' && (lpvPhase === 'ARM' || lpvPhase === 'CPLD')
+  const gsLabel = lpvPhase === 'CPLD' ? 'GS CPLD' : 'GS ARM'
+  const gsY = HSI_CY - clamp(gsDev || 0, -2, 2) * GSI_PITCH
   const live = state.skyview === 'on' // bugs actually drive the AP
 
   // pointer -> viewBox coordinates
@@ -115,6 +127,8 @@ export default function Pfd({ state, actions }) {
 
   const cdiSources = ['heading', 'flightplan', 'navaid']
   const cdiLabel = { heading: 'HDG', flightplan: 'GPS', navaid: 'NAV' }[skyviewCdi]
+  const cdiColor = { flightplan: '#e641d6', navaid: '#28d07a' }[skyviewCdi] // GPS magenta, NAV green
+  const showCdi = skyviewCdi !== 'heading' // HDG mode has no course needle
   const cycleCdi = () => set({ skyviewCdi: cdiSources[(cdiSources.indexOf(skyviewCdi) + 1) % cdiSources.length] })
 
   // bug Y positions (clamped to the tape so an off-scale bug parks at the edge)
@@ -169,7 +183,7 @@ export default function Pfd({ state, actions }) {
             const [x2, y2] = polar(AX, YC, HSI_R * 0.92 - (a % 30 === 0 ? 8 : 5), a)
             return <line key={a} x1={x1} y1={y1} x2={x2} y2={y2} stroke="#cfe0f5" strokeWidth="1" />
           })}
-          <polygon points={`${AX},${YC - HSI_R * 0.92 + 1} ${AX - 5},${YC - HSI_R * 0.92 + 11} ${AX + 5},${YC - HSI_R * 0.92 + 11}`} fill="#ffd23f" />
+          <polygon points={`${AX - 5},${YC - HSI_R * 0.92 + 1} ${AX + 5},${YC - HSI_R * 0.92 + 1} ${AX},${YC - HSI_R * 0.92 + 11}`} fill="#ffd23f" />
           <g transform={`rotate(${-bankAngle} ${AX} ${YC})`}>
             <polygon points={`${AX},${YC - HSI_R * 0.92 + 13} ${AX - 6},${YC - HSI_R * 0.92 + 25} ${AX + 6},${YC - HSI_R * 0.92 + 25}`} fill="#eef5ff" />
           </g>
@@ -243,8 +257,12 @@ export default function Pfd({ state, actions }) {
             )
           })}
           <line x1={VS_X} y1={YC} x2={VS_X + VS_W} y2={YC} stroke="#6b7c91" strokeWidth="1" />
-          {/* current-VS pointer (the numeric value flag the bug notch seats over) */}
-          <line x1={VS_X} y1={vsY} x2={VS_X + VS_W} y2={vsY} className="pfd-vs-ptr" />
+          {/* current-VS value flag — its pointer apex (VS_X+5) matches the bug notch */}
+          <polygon
+            points={`${VS_X + VS_W},${vsY - 9} ${VS_X + 12},${vsY - 9} ${VS_X + 5},${vsY} ${VS_X + 12},${vsY + 9} ${VS_X + VS_W},${vsY + 9}`}
+            className="pfd-readout"
+          />
+          <text x={VS_X + VS_W - 3} y={vsY + 3} className="pfd-readout-vs" textAnchor="end">{Math.round(curVS)}</text>
           {/* VS bug — small vertical marker, notch on the inner side */}
           <path d={tapeBug(VS_X, vsBugY, 9, 16, 4)} className="pfd-bug" />
         </g>
@@ -267,32 +285,74 @@ export default function Pfd({ state, actions }) {
                 <text key={a} x={tx} y={ty + 4} className="pfd-rose" textAnchor="middle" transform={`rotate(${a} ${tx} ${ty})`}>{lbl}</text>
               )
             })}
-            {/* heading bug */}
+            {/* heading bug — rides just inside the ring, outer edge tangent to it */}
             <g transform={`rotate(${svHeadingBug} ${HSI_CX} ${HSI_CY})`}>
-              <path d={ringBug(HSI_CX, HSI_CY - HSI_R - 9, 16, 10, 5)} className="pfd-bug" />
+              <path d={ringBug(HSI_CX, HSI_CY - HSI_R, 16, 10, 5)} className="pfd-bug" />
             </g>
-            {/* course / CDI needle (points along the heading bug) */}
-            <g transform={`rotate(${svHeadingBug} ${HSI_CX} ${HSI_CY})`}>
-              <line x1={HSI_CX} y1={HSI_CY - HSI_R + 14} x2={HSI_CX} y2={HSI_CY - 22} className="pfd-cdi" />
-              <line x1={HSI_CX} y1={HSI_CY + 22} x2={HSI_CX} y2={HSI_CY + HSI_R - 14} className="pfd-cdi" />
-              <polygon points={`${HSI_CX},${HSI_CY - HSI_R + 6} ${HSI_CX - 5},${HSI_CY - HSI_R + 16} ${HSI_CX + 5},${HSI_CY - HSI_R + 16}`} className="pfd-cdi-fill" />
-            </g>
+            {/* course / CDI needle (points along the heading bug); hidden in HDG mode */}
+            {showCdi && (
+              <g transform={`rotate(${svHeadingBug} ${HSI_CX} ${HSI_CY})`}>
+                <line x1={HSI_CX} y1={HSI_CY - HSI_R + 14} x2={HSI_CX} y2={HSI_CY - 22} className="pfd-cdi" style={{ stroke: cdiColor }} />
+                <line x1={HSI_CX} y1={HSI_CY + 22} x2={HSI_CX} y2={HSI_CY + HSI_R - 14} className="pfd-cdi" style={{ stroke: cdiColor }} />
+                <polygon points={`${HSI_CX},${HSI_CY - HSI_R + 6} ${HSI_CX - 5},${HSI_CY - HSI_R + 16} ${HSI_CX + 5},${HSI_CY - HSI_R + 16}`} className="pfd-cdi-fill" style={{ fill: cdiColor }} />
+              </g>
+            )}
           </g>
-          {/* fixed aircraft */}
-          <g stroke="#ffd23f" strokeWidth="2.4" fill="none" pointerEvents="none">
-            <line x1={HSI_CX} y1={HSI_CY - 16} x2={HSI_CX} y2={HSI_CY + 16} />
-            <line x1={HSI_CX - 11} y1={HSI_CY} x2={HSI_CX + 11} y2={HSI_CY} />
-            <line x1={HSI_CX - 6} y1={HSI_CY + 11} x2={HSI_CX + 6} y2={HSI_CY + 11} />
-          </g>
-          {/* fixed top index */}
-          <polygon points={`${HSI_CX - 6},${HSI_CY - HSI_R - 4} ${HSI_CX + 6},${HSI_CY - HSI_R - 4} ${HSI_CX},${HSI_CY - HSI_R + 6}`} fill="#eef5ff" pointerEvents="none" />
+          {/* fixed aircraft — solid white top-down planform */}
+          <path
+            d={`M${HSI_CX} ${HSI_CY - 16}
+                L${HSI_CX + 2.5} ${HSI_CY - 9} L${HSI_CX + 2.5} ${HSI_CY - 2}
+                L${HSI_CX + 12} ${HSI_CY + 3} L${HSI_CX + 12} ${HSI_CY + 5} L${HSI_CX + 3} ${HSI_CY + 4}
+                L${HSI_CX + 2.5} ${HSI_CY + 10}
+                L${HSI_CX + 6} ${HSI_CY + 14} L${HSI_CX + 6} ${HSI_CY + 15.5} L${HSI_CX + 2} ${HSI_CY + 16}
+                L${HSI_CX} ${HSI_CY + 16.5}
+                L${HSI_CX - 2} ${HSI_CY + 16} L${HSI_CX - 6} ${HSI_CY + 15.5} L${HSI_CX - 6} ${HSI_CY + 14}
+                L${HSI_CX - 2.5} ${HSI_CY + 10}
+                L${HSI_CX - 3} ${HSI_CY + 4} L${HSI_CX - 12} ${HSI_CY + 5} L${HSI_CX - 12} ${HSI_CY + 3}
+                L${HSI_CX - 2.5} ${HSI_CY - 2} L${HSI_CX - 2.5} ${HSI_CY - 9} Z`}
+            fill="#f4f8ff"
+            stroke="#0a0d11"
+            strokeWidth="0.8"
+            strokeLinejoin="round"
+            pointerEvents="none"
+          />
         </g>
-        {/* heading readout */}
+        {/* heading flag — readout box and notch-filling pointer as one continuous shape */}
         <g pointerEvents="none">
-          <rect x={HSI_CX - 22} y={HSI_CY - HSI_R - 22} width="44" height="17" rx="2" className="pfd-readout" />
+          <path
+            d={`M${HSI_CX - 20} ${HSI_CY - HSI_R - 22}
+                L${HSI_CX + 20} ${HSI_CY - HSI_R - 22}
+                Q${HSI_CX + 22} ${HSI_CY - HSI_R - 22} ${HSI_CX + 22} ${HSI_CY - HSI_R - 20}
+                L${HSI_CX + 22} ${HSI_CY - HSI_R - 7}
+                Q${HSI_CX + 22} ${HSI_CY - HSI_R - 5} ${HSI_CX + 20} ${HSI_CY - HSI_R - 5}
+                L${HSI_CX + 10} ${HSI_CY - HSI_R - 5}
+                L${HSI_CX} ${HSI_CY - HSI_R + 5}
+                L${HSI_CX - 10} ${HSI_CY - HSI_R - 5}
+                L${HSI_CX - 20} ${HSI_CY - HSI_R - 5}
+                Q${HSI_CX - 22} ${HSI_CY - HSI_R - 5} ${HSI_CX - 22} ${HSI_CY - HSI_R - 7}
+                L${HSI_CX - 22} ${HSI_CY - HSI_R - 20}
+                Q${HSI_CX - 22} ${HSI_CY - HSI_R - 22} ${HSI_CX - 20} ${HSI_CY - HSI_R - 22} Z`}
+            className="pfd-readout"
+          />
           <text x={HSI_CX} y={HSI_CY - HSI_R - 9} className="pfd-readout-val" textAnchor="middle">{String(Math.round(mod360(curTrack))).padStart(3, '0')}</text>
         </g>
-        <text x={HSI_CX} y={HSI_CY + 2} className="pfd-cdi-src" textAnchor="middle" pointerEvents="none">{cdiLabel}</text>
+
+        {/* ===== LPV glideslope (vertical guidance) ===== */}
+        {showGs && (
+          <g pointerEvents="none">
+            <text x={GSI_X} y={HSI_CY - 2 * GSI_DOT - 8} className="pfd-gsi-lbl" textAnchor="middle">G/S</text>
+            <rect x={GSI_X - 6} y={HSI_CY - 2 * GSI_DOT} width="12" height={4 * GSI_DOT} rx="2" className="pfd-gsi-scale" />
+            {[-2, -1, 1, 2].map((d) => (
+              <circle key={d} cx={GSI_X} cy={HSI_CY - d * GSI_PITCH} r="2.4" className="pfd-gsi-dot" />
+            ))}
+            {/* fixed white centre reference */}
+            <line x1={GSI_X - 4.5} y1={HSI_CY} x2={GSI_X + 4.5} y2={HSI_CY} className="pfd-gsi-ctr" />
+            {/* moving magenta glideslope */}
+            <line x1={GSI_X - 4.5} y1={gsY} x2={GSI_X + 4.5} y2={gsY} className="pfd-gsi-gs" />
+            {/* vertical-mode annunciation */}
+            <text x={GSI_X} y={HSI_CY + 2 * GSI_DOT + 13} className="pfd-gsi-ann" textAnchor="middle">{gsLabel}</text>
+          </g>
+        )}
       </svg>
 
       <div className="pfd-controls">
