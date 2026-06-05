@@ -49,22 +49,23 @@ const polar = (cx, cy, r, deg) => {
   return [cx + r * Math.cos(a), cy + r * Math.sin(a)]
 }
 
-// Notched-rectangle bug for a vertical tape: left edge at x0 (the value line),
-// body extending right by w; a triangular notch is cut into the left edge,
-// centred on y, opening toward the scale.
+// Small vertical notched-rectangle bug for a tape: the notch is cut into the
+// inner (right) edge so it faces into the tape and seats over the numeric value
+// flag when the bug matches the current value.
 const tapeBug = (x0, y, w, h, n) => {
   const t = y - h / 2
   const bm = y + h / 2
-  return `M${x0 + w} ${t} L${x0} ${t} L${x0} ${y - n} L${x0 + n} ${y} L${x0} ${y + n} L${x0} ${bm} L${x0 + w} ${bm} Z`
+  const xr = x0 + w
+  return `M${x0} ${t} L${xr} ${t} L${xr} ${y - n} L${xr - n} ${y} L${xr} ${y + n} L${xr} ${bm} L${x0} ${bm} Z`
 }
 
-// Notched-rectangle bug for the HSI rim: a rectangle whose bottom edge (at the
-// rim) has a triangular notch cut into it, opening inward toward the centre.
+// Notched-rectangle bug for the HSI rim: the notch is cut into the outer (top)
+// edge so it faces away from the centre of the ring.
 const ringBug = (cx, top, w, h, n) => {
   const l = cx - w / 2
   const r = cx + w / 2
   const bot = top + h
-  return `M${l} ${top} L${r} ${top} L${r} ${bot} L${cx + n} ${bot} L${cx} ${bot - n} L${cx - n} ${bot} L${l} ${bot} Z`
+  return `M${l} ${top} L${cx - n} ${top} L${cx} ${top + n} L${cx + n} ${top} L${r} ${top} L${r} ${bot} L${l} ${bot} Z`
 }
 
 export default function Pfd({ state, actions }) {
@@ -218,16 +219,12 @@ export default function Pfd({ state, actions }) {
             )
           })}
         </g>
-        {/* altitude bug */}
-        {svAltBugSet && (
-          <g pointerEvents="none">
-            <path d={tapeBug(ALT_X, altBugY, ALT_W, 16, 5)} className="pfd-bug" />
-            <text x={ALT_X + ALT_W - 4} y={altBugY + 3} className="pfd-bug-val" textAnchor="end">{svAltBug}</text>
-          </g>
-        )}
+        {/* altitude bug — small vertical marker, notch on the inner side */}
+        {svAltBugSet && <path d={tapeBug(ALT_X, altBugY, 9, 18, 5)} className="pfd-bug" pointerEvents="none" />}
+        {/* numeric value flag — its pointer apex matches the bug notch (ALT_X+4) */}
         <g pointerEvents="none">
           <polygon
-            points={`${ALT_X + ALT_W},${YC - 10} ${ALT_X + 9},${YC - 10} ${ALT_X + 2},${YC} ${ALT_X + 9},${YC + 10} ${ALT_X + ALT_W},${YC + 10}`}
+            points={`${ALT_X + ALT_W},${YC - 10} ${ALT_X + 11},${YC - 10} ${ALT_X + 4},${YC} ${ALT_X + 11},${YC + 10} ${ALT_X + ALT_W},${YC + 10}`}
             className="pfd-readout"
           />
           <text x={ALT_X + ALT_W - 4} y={YC + 4} className="pfd-readout-val" textAnchor="end">{Math.round(curAlt)}</text>
@@ -246,10 +243,10 @@ export default function Pfd({ state, actions }) {
             )
           })}
           <line x1={VS_X} y1={YC} x2={VS_X + VS_W} y2={YC} stroke="#6b7c91" strokeWidth="1" />
-          {/* current VS pointer */}
+          {/* current-VS pointer (the numeric value flag the bug notch seats over) */}
           <line x1={VS_X} y1={vsY} x2={VS_X + VS_W} y2={vsY} className="pfd-vs-ptr" />
-          {/* VS bug */}
-          <path d={tapeBug(VS_X, vsBugY, VS_W, 12, 4)} className="pfd-bug" />
+          {/* VS bug — small vertical marker, notch on the inner side */}
+          <path d={tapeBug(VS_X, vsBugY, 9, 16, 4)} className="pfd-bug" />
         </g>
 
         {/* ===== HSI ===== */}
