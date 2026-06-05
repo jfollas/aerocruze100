@@ -1,0 +1,145 @@
+/* Dynon SkyView–style PFD. Compact, scales to the config column width. */
+.pfd {
+  background: #0a0d11;
+  border: 1px solid #2a3340;
+  border-radius: 10px;
+  padding: 8px 8px 10px;
+}
+.pfd-off {
+  opacity: 0.55;
+  filter: saturate(0.4);
+}
+.pfd-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  touch-action: none; /* let pointer drags work on touch without scrolling */
+  user-select: none;
+}
+
+/* tapes & frames */
+.pfd-tape {
+  fill: rgba(10, 16, 24, 0.72);
+  stroke: #3a4655;
+  stroke-width: 1;
+}
+.pfd-frame {
+  fill: none;
+  stroke: #4a5868;
+  stroke-width: 1.4;
+}
+.pfd-tick {
+  fill: #c4d2e2;
+  font: 700 9px/1 'Segoe UI', system-ui, sans-serif;
+}
+.pfd-tick-sm {
+  fill: #aebdcf;
+  font: 700 8px/1 'Segoe UI', system-ui, sans-serif;
+}
+.pfd-ladder {
+  fill: #dce8fb;
+  font: 600 7px/1 'Segoe UI', system-ui, sans-serif;
+}
+
+/* current-value readouts (speed / alt / heading) */
+.pfd-readout {
+  fill: #11161d;
+  stroke: #dfe8f3;
+  stroke-width: 1.2;
+}
+.pfd-readout-val {
+  fill: #ffffff;
+  font: 800 12px/1 'Segoe UI', system-ui, sans-serif;
+}
+
+/* cyan bugs */
+.pfd-bug {
+  fill: #19d2e6;
+  stroke: #0a3a40;
+  stroke-width: 0.6;
+}
+.pfd-bug-val {
+  fill: #05222a;
+  font: 800 8px/1 'Segoe UI', system-ui, sans-serif;
+}
+.pfd-vs-ptr {
+  stroke: #19d2e6;
+  stroke-width: 2.4;
+}
+
+/* HSI */
+.pfd-hsi-bg {
+  fill: #0c1117;
+  stroke: #3a4655;
+  stroke-width: 1;
+}
+.pfd-rose {
+  fill: #d2dded;
+  font: 700 9px/1 'Segoe UI', system-ui, sans-serif;
+}
+.pfd-cdi {
+  stroke: #28d07a;
+  stroke-width: 2.2;
+}
+.pfd-cdi-fill {
+  fill: #28d07a;
+}
+.pfd-cdi-src {
+  fill: #7fe6b4;
+  font: 800 11px/1 'Segoe UI', system-ui, sans-serif;
+  letter-spacing: 0.05em;
+}
+
+/* bug chips / controls below the SVG */
+.pfd-controls {
+  margin-top: 8px;
+}
+.pfd-chips {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+.pfd-chip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  background: #141a22;
+  border: 1px solid #2c3744;
+  border-radius: 7px;
+  padding: 5px 4px;
+  color: #c8d4e2;
+}
+.pfd-chip-lbl {
+  font-size: 0.6rem;
+  letter-spacing: 0.08em;
+  color: #8b99ab;
+}
+.pfd-chip-val {
+  font-size: 0.82rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: #e7eef7;
+}
+.pfd-chip-hdg .pfd-chip-val,
+.pfd-chip-hdg {
+  color: #7fe6b4;
+}
+button.pfd-chip {
+  cursor: pointer;
+}
+button.pfd-chip:hover {
+  border-color: #3f4d5e;
+}
+.pfd-chip-btn.on {
+  border-color: #19a9bd;
+}
+.pfd-chip-btn.on .pfd-chip-val {
+  color: #19d2e6;
+}
+.pfd-hint {
+  margin: 8px 0 0;
+  font-size: 0.7rem;
+  color: #7e8a9b;
+  line-height: 1.4;
+}

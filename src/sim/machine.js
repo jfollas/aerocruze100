@@ -39,6 +39,8 @@ export const initialState = {
   curTrack: 0,
   curAlt: 1500,
   curVS: 0,
+  curIAS: 0, // indicated airspeed (kt) — drives the PFD speed tape
+  pitch: 0, // pitch attitude (deg, + nose up) — drives the PFD horizon
   bankAngle: 0,
   groundSpeed: 0,
 

@@ -4,6 +4,9 @@
 
 const TURN_RATE = 6 // deg/sec the autopilot rolls toward the selected track
 const VS_RESPONSE = 4 // how quickly actual VS chases target VS (1/sec)
+const CRUISE_IAS = 110 // nominal cruise indicated airspeed (kt)
+const IAS_RESPONSE = 0.6 // how quickly IAS settles toward its target (1/sec)
+const PITCH_RESPONSE = 2 // how quickly pitch settles toward its target (1/sec)
 
 // Signed shortest angular difference a->b in (-180,180]
 export function angleDiff(a, b) {
@@ -61,6 +64,16 @@ export function stepFlight(s, dt) {
   const newVS = approach(s.curVS, targetVS, Math.abs(targetVS - s.curVS) * Math.min(1, VS_RESPONSE * dt))
   patch.curVS = newVS
   patch.curAlt = Math.max(0, s.curAlt + (newVS / 60) * dt)
+
+  // ---- Airspeed & pitch (light model for the PFD) ----
+  // Cruise IAS when flying, tapering off near the ground; trims back a touch in
+  // a climb and gains a touch in a descent.
+  const flying = s.groundSpeed > 10
+  const targetIAS = flying ? Math.max(60, CRUISE_IAS - newVS / 100) : 0
+  patch.curIAS = approach(s.curIAS, targetIAS, Math.abs(targetIAS - s.curIAS) * Math.min(1, IAS_RESPONSE * dt))
+  // Pitch tracks vertical speed (≈12° at 1000 fpm), eased.
+  const targetPitch = Math.max(-12, Math.min(12, newVS * 0.012))
+  patch.pitch = approach(s.pitch, targetPitch, Math.abs(targetPitch - s.pitch) * Math.min(1, PITCH_RESPONSE * dt))
 
   return patch
 }

@@ -248,7 +248,7 @@ describe('Dynon SkyView mode (Install Manual §10)', () => {
     const d = deriveDisplay(s)
     expect(d.topLeft.header).toBe('SKYVIEW')
     expect(d.bottomLeft).toEqual({ label: 'SEL', value: '284' })
-    expect(d.topRight).toEqual({ label: 'ALT', value: '3500' })
+    expect(d.topRight).toEqual({ label: 'ALT', alt: 3500 })
   })
 
   it('shows GPS bottom-left when the SkyView CDI follows a flight plan', () => {
@@ -328,5 +328,25 @@ describe('CWS (§5.2.2, §5.4.7)', () => {
     expect(s.cwsHeld).toBe(false)
     expect(s.selTrack).toBe(250)
     expect(s.selVS).toBe(600)
+  })
+})
+
+describe('PFD flight model (airspeed & pitch)', () => {
+  it('airspeed rises toward cruise when flying, pitch tracks VS sign', () => {
+    let s = poweredOn({ groundSpeed: 120, curIAS: 0, curVS: 0 })
+    s = reducer(s, E.knobPress()) // engage
+    s = reducer(s, E.alt())
+    s = run(s, E.knobCw(), E.knobCw(), E.knobCw(), E.knobCw()) // climb target above current
+    s = reducer(s, E.knobPress()) // cursor -> vs
+    s = reducer(s, E.knobPress()) // confirm -> SEL climb
+    for (let i = 0; i < 40; i++) s = reducer(s, E.tick(0.5))
+    expect(s.curIAS).toBeGreaterThan(80) // settled toward cruise
+    expect(s.pitch).toBeGreaterThan(1) // nose up while climbing
+  })
+
+  it('airspeed falls to zero when not flying', () => {
+    let s = poweredOn({ groundSpeed: 0, curIAS: 100 })
+    for (let i = 0; i < 40; i++) s = reducer(s, E.tick(0.5))
+    expect(s.curIAS).toBeLessThan(20)
   })
 })
