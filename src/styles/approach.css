@@ -1,0 +1,191 @@
+/* RNAV (GPS) RWY 10 approach trainer panel */
+.apch {
+  margin-top: 28px;
+  background: #11151c;
+  border: 1px solid #2a3340;
+  border-radius: 10px;
+  padding: 14px 16px 16px;
+}
+.apch-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 24px;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+.apch-title h3 {
+  margin: 0 0 4px;
+  font-size: 1rem;
+  color: #dfe6f0;
+}
+.apch-title p {
+  margin: 0;
+  max-width: 62ch;
+  font-size: 0.78rem;
+  line-height: 1.5;
+  color: #93a1b4;
+}
+.apch-title b {
+  color: #c8d4e2;
+}
+.apch-ctrls {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.apch-ctrl-lbl {
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #8b99ab;
+}
+.apch-iafs {
+  display: flex;
+  gap: 6px;
+}
+.apch-iaf,
+.apch-reset {
+  background: #141a22;
+  border: 1px solid #2c3744;
+  border-radius: 7px;
+  padding: 6px 10px;
+  color: #c8d4e2;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.apch-iaf:hover,
+.apch-reset:hover:not(:disabled) {
+  border-color: #3f4d5e;
+}
+.apch-iaf.active {
+  border-color: #19a9bd;
+  color: #19d2e6;
+}
+.apch-reset:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.apch-warn {
+  margin: 12px 0 0;
+  padding: 8px 12px;
+  border-radius: 7px;
+  background: #3a1416;
+  border: 1px solid #b3343a;
+  color: #ff6b72;
+  font-weight: 800;
+  font-size: 0.82rem;
+  letter-spacing: 0.02em;
+  text-align: center;
+  animation: apch-flash 1s steps(2, start) infinite;
+}
+@keyframes apch-flash {
+  50% {
+    opacity: 0.45;
+  }
+}
+
+.apch-views {
+  margin-top: 12px;
+  display: grid;
+  grid-template-columns: minmax(300px, 500px) 1fr;
+  gap: 16px;
+  align-items: start;
+}
+.apch-map {
+  background: #fff;
+  border: 1px solid #2a3340;
+  border-radius: 8px;
+  overflow: hidden;
+}
+.apch-map svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.apch-side {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* aircraft icon (both views) */
+.apch-plane path {
+  fill: #ffd23f;
+  stroke: #0a0d11;
+  stroke-width: 0.8;
+  stroke-linejoin: round;
+}
+.apch-plane.off path {
+  opacity: 0.5;
+}
+
+/* 700-AGL autopilot floor drawn over the plate profile (full-page viewBox) */
+.apch-floor {
+  stroke: #e0212b;
+  stroke-width: 4;
+  stroke-dasharray: 14 10;
+  opacity: 0.85;
+}
+
+/* legend beside the plate */
+.apch-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 10px;
+  background: #0c1117;
+  border: 1px solid #2a3340;
+  border-radius: 8px;
+  font-size: 0.74rem;
+  color: #aebdcf;
+}
+.apch-legend span {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.apch-legend-ico {
+  width: 16px;
+  height: 16px;
+  flex: none;
+}
+.apch-legend-ico path {
+  fill: #ffd23f;
+  stroke: #0a0d11;
+  stroke-width: 0.8;
+  stroke-linejoin: round;
+}
+.apch-legend-line {
+  width: 18px;
+  height: 0;
+  flex: none;
+  border-top: 2px dashed #e0212b;
+}
+
+.apch-status {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  padding: 8px 10px;
+  background: #0c1117;
+  border: 1px solid #2a3340;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  color: #c8d4e2;
+}
+.apch-status b {
+  color: #8b99ab;
+  font-weight: 700;
+  margin-right: 4px;
+  font-size: 0.66rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+@media (max-width: 760px) {
+  .apch-views {
+    grid-template-columns: 1fr;
+  }
+}

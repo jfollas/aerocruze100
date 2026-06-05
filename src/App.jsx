@@ -3,6 +3,7 @@ import { reducer, initialState } from './sim/machine.js'
 import * as E from './sim/events.js'
 import Device, { VARIANTS } from './components/Device.jsx'
 import ConfigPanel from './components/ConfigPanel.jsx'
+import ApproachPanel from './components/ApproachPanel.jsx'
 import './styles/app.css'
 
 export default function App() {
@@ -91,6 +92,8 @@ export default function App() {
         <Device variant={variant} state={state} dispatch={dispatch} actions={actions} />
         <ConfigPanel state={state} actions={actions} />
       </main>
+
+      <ApproachPanel state={state} actions={actions} />
 
       <footer className="app-foot">
         <p>

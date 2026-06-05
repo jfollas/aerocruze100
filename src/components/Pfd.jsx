@@ -129,6 +129,10 @@ export default function Pfd({ state, actions }) {
   const cdiLabel = { heading: 'HDG', flightplan: 'GPS', navaid: 'NAV' }[skyviewCdi]
   const cdiColor = { flightplan: '#e641d6', navaid: '#28d07a' }[skyviewCdi] // GPS magenta, NAV green
   const showCdi = skyviewCdi !== 'heading' // HDG mode has no course needle
+  // The course needle points along the active GPS flight-plan leg (its desired
+  // track), which is independent of the heading bug; it falls back to the bug
+  // when no flight-plan course is available.
+  const cdiCourse = skyviewCdi === 'flightplan' && state.gpsDtk != null ? state.gpsDtk : svHeadingBug
   const cycleCdi = () => set({ skyviewCdi: cdiSources[(cdiSources.indexOf(skyviewCdi) + 1) % cdiSources.length] })
 
   // bug Y positions (clamped to the tape so an off-scale bug parks at the edge)
@@ -289,9 +293,10 @@ export default function Pfd({ state, actions }) {
             <g transform={`rotate(${svHeadingBug} ${HSI_CX} ${HSI_CY})`}>
               <path d={ringBug(HSI_CX, HSI_CY - HSI_R, 16, 10, 5)} className="pfd-bug" />
             </g>
-            {/* course / CDI needle (points along the heading bug); hidden in HDG mode */}
+            {/* course / CDI needle (points along the active GPS leg / DTK, or the
+                heading bug for other sources); hidden in HDG mode */}
             {showCdi && (
-              <g transform={`rotate(${svHeadingBug} ${HSI_CX} ${HSI_CY})`}>
+              <g transform={`rotate(${cdiCourse} ${HSI_CX} ${HSI_CY})`}>
                 <line x1={HSI_CX} y1={HSI_CY - HSI_R + 14} x2={HSI_CX} y2={HSI_CY - 22} className="pfd-cdi" style={{ stroke: cdiColor }} />
                 <line x1={HSI_CX} y1={HSI_CY + 22} x2={HSI_CX} y2={HSI_CY + HSI_R - 14} className="pfd-cdi" style={{ stroke: cdiColor }} />
                 <polygon points={`${HSI_CX},${HSI_CY - HSI_R + 6} ${HSI_CX - 5},${HSI_CY - HSI_R + 16} ${HSI_CX + 5},${HSI_CY - HSI_R + 16}`} className="pfd-cdi-fill" style={{ fill: cdiColor }} />

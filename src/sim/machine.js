@@ -4,6 +4,9 @@
 
 import * as E from './events.js'
 import { stepFlight, mod360 } from './flight.js'
+import { stepScenario } from './scenario.js'
+import { FIX_XY, FIELD_ELEV, bearingToTrue, trueToMag } from './geo.js'
+import { PLANS } from './navplan.js'
 
 const clamp = (x, lo, hi) => Math.max(lo, Math.min(hi, x))
 const round = (x, step) => Math.round(x / step) * step
@@ -53,6 +56,16 @@ export const initialState = {
   lpvPhase: null, // LPV approach phase: null | TURN | ARM | CPLD
   gsDist: null, // NM to the threshold while on the LPV approach
   gsDev: 0, // glideslope deviation in dots (+ = beam above, fly up); for the GSI
+  gpsDtk: null, // desired track of the active GPS leg (deg mag); drives the HSI needle
+
+  // RNAV (GPS) RWY 10 scenario (to-scale map + profile). When active, the
+  // position-based scenario engine flies the published approach.
+  scenarioActive: false,
+  scenarioIaf: null, // 'LEYIR' | 'WUDAT' — chosen initial approach fix
+  curX: 0, // aircraft position east of the field (nm)
+  curY: 0, // aircraft position north of the field (nm)
+  activeLeg: 0, // index of the active leg in PLANS[scenarioIaf]
+  agl: undefined, // height above field (ft); drives the 700-AGL warning
   inducedBank: 0, // for AEP demonstration while disengaged
   trim: 'none', // none | up | dn — trim annunciation (§4.3)
 
@@ -147,6 +160,12 @@ function applyConfig(state, patch) {
     }
   }
   let s = { ...state, ...fields }
+  // Starting the RNAV scenario snaps the aircraft to the chosen IAF.
+  if (fields.scenarioActive === true) {
+    s = startScenario(s, fields.scenarioIaf || s.scenarioIaf)
+  } else if (fields.scenarioActive === false) {
+    s = { ...s, gpsDtk: null }
+  }
   // Inducing a sensor error disengages and latches until power cycle (§8.4)
   if (fields.warning === 'SENSOR') {
     s = { ...s, apEngaged: false, verticalMode: null, screen: 'NORMAL' }
@@ -176,6 +195,38 @@ function keepConfig(s) {
     svAltBug: s.svAltBug,
     svAltBugSet: s.svAltBugSet,
     svVsBug: s.svVsBug,
+    scenarioActive: s.scenarioActive,
+    scenarioIaf: s.scenarioIaf,
+    curX: s.curX,
+    curY: s.curY,
+    activeLeg: s.activeLeg,
+  }
+}
+
+// Position the aircraft at the chosen IAF to begin the RNAV (GPS) RWY 10
+// scenario: snap to the fix, head down the first leg toward UBAYA, arriving at
+// 3000 ft so the pilot can set up the descent to the 2300 ft platform.
+function startScenario(s, iaf) {
+  const plan = PLANS[iaf]
+  if (!plan) return { ...s, scenarioActive: false, scenarioIaf: null }
+  const p0 = FIX_XY[iaf]
+  const crsMag = Math.round(trueToMag(bearingToTrue(plan[0], plan[1])))
+  return {
+    ...s,
+    scenarioActive: true,
+    scenarioIaf: iaf,
+    approachActive: true,
+    skyviewCdi: 'flightplan', // show the GPS course needle & glideslope on the PFD
+    curX: p0.x,
+    curY: p0.y,
+    curTrack: crsMag,
+    selTrack: crsMag,
+    svHeadingBug: crsMag,
+    gpsDtk: crsMag,
+    curAlt: 3000,
+    curVS: 0,
+    activeLeg: 1,
+    agl: 3000 - FIELD_ELEV,
   }
 }
 
@@ -438,7 +489,9 @@ function onTick(s, dt) {
   }
   if (s.power !== 'on') return s
 
-  let next = { ...s, ...stepFlight(s, dt) }
+  // The position-based scenario engine takes over when active; otherwise the
+  // legacy light flight model runs.
+  let next = { ...s, ...(s.scenarioActive ? stepScenario(s, dt) : stepFlight(s, dt)) }
 
   // gyro-backup derived flag
   next.gyroMode = isGyro(next)
@@ -474,8 +527,10 @@ function onTick(s, dt) {
     next = { ...next, verticalMode: 'ALTHOLD', curVS: 0, curAlt: next.selAlt }
   }
 
-  // Vertical approach sequencing (§5.4.5)
+  // Vertical approach sequencing (§5.4.5). In the scenario, coupling is driven
+  // by position (at ZIMBO) inside the engine, so skip the timer-based arming.
   const gsEligible =
+    !next.scenarioActive &&
     next.apEngaged &&
     next.lateralMode === 'GPSS' &&
     next.approachActive &&
