@@ -33,7 +33,7 @@ export default function MasterPanel({ state, actions }) {
 
   return (
     <div className="cfg-group">
-      <h3>Aircraft master</h3>
+      <h3>Autopilot controls</h3>
       <div className="master-panel">
         <div className="master-ctl">
           <button

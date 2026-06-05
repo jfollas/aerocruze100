@@ -1,47 +1,74 @@
+/* One-page layout: fill the maximized viewport (1080 minus browser/OS chrome
+   is exactly 100vh) and let the three columns share the height. */
 .app {
-  max-width: 1840px;
+  height: 100vh;
+  max-height: 100vh;
+  max-width: 1880px;
   margin: 0 auto;
-  padding: 20px 24px 40px;
+  padding: 10px 16px;
+  box-sizing: border-box;
+  overflow: hidden;
 }
+
+.app-main {
+  height: 100%;
+  display: grid;
+  grid-template-columns: minmax(330px, 430px) minmax(320px, 420px) minmax(430px, 600px);
+  gap: 16px;
+  justify-content: center;
+  align-items: stretch;
+  min-height: 0;
+}
+.col {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+  min-height: 0;
+}
+.col-left {
+  overflow-y: auto;
+}
+.col-center {
+  overflow-y: auto;
+}
+
+/* compact header, now living at the top of the left column */
 .app-head h1 {
-  font-size: 1.5rem;
-  margin: 0 0 6px;
+  font-size: 1.12rem;
+  line-height: 1.2;
+  margin: 0 0 3px;
 }
 .app-head .sub {
-  margin: 0 0 14px;
+  margin: 0 0 8px;
   color: #9aa7b8;
-  max-width: 70ch;
-  font-size: 0.95rem;
+  font-size: 0.78rem;
+  line-height: 1.4;
 }
 .switch-bar {
   display: flex;
-  flex-wrap: wrap;
-  gap: 22px;
-  margin-bottom: 20px;
-}
-.switch-grp {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
 }
 .switch-lbl {
-  font-size: 0.7rem;
+  font-size: 0.66rem;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: #8b99ab;
 }
 .variant-switch {
   display: flex;
-  gap: 8px;
+  gap: 6px;
 }
 .var-btn {
   background: #1c232e;
   color: #cdd7e4;
   border: 1px solid #333d4b;
-  border-radius: 8px;
-  padding: 8px 16px;
+  border-radius: 7px;
+  padding: 5px 12px;
   cursor: pointer;
-  font-size: 0.9rem;
+  font-size: 0.82rem;
 }
 .var-btn.active {
   background: #2d6cdf;
@@ -49,26 +76,37 @@
   color: #fff;
 }
 
-.app-main {
-  display: grid;
-  grid-template-columns: minmax(340px, 460px) minmax(340px, 460px) minmax(460px, 640px);
-  gap: 24px;
-  justify-content: center;
-  align-items: start;
+/* slim footnote at the bottom of the left column */
+.app-foot {
+  margin: 2px 0 0;
+  color: #7e8a9b;
+  font-size: 0.7rem;
+  line-height: 1.5;
 }
-.col {
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
-  min-width: 0;
+.app-foot kbd {
+  background: #1c232e;
+  border: 1px solid #333d4b;
+  border-radius: 4px;
+  padding: 0 4px;
+  font-size: 0.66rem;
 }
-/* stack to two columns, then one, on narrower viewports */
-@media (max-width: 1180px) {
+
+@media (max-width: 1120px) {
+  .app {
+    height: auto;
+    max-height: none;
+    overflow: visible;
+  }
   .app-main {
+    height: auto;
     grid-template-columns: minmax(320px, 460px) minmax(360px, 640px);
   }
   .col-right {
     grid-column: 1 / -1;
+  }
+  .col-left,
+  .col-center {
+    overflow: visible;
   }
 }
 @media (max-width: 760px) {
@@ -78,18 +116,4 @@
   .col-right {
     grid-column: auto;
   }
-}
-
-.app-foot {
-  margin-top: 28px;
-  color: #7e8a9b;
-  font-size: 0.85rem;
-  line-height: 1.7;
-}
-.app-foot p {
-  margin: 0 0 8px;
-}
-.app-disclaimer {
-  color: #9aa7b8;
-  font-style: italic;
 }

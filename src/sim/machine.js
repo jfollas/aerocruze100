@@ -202,8 +202,13 @@ function keepConfig(s) {
     groundSpeed: s.groundSpeed,
     approachActive: s.approachActive,
     glideslopeFlagged: s.glideslopeFlagged,
+    // the aircraft (PFD) state persists across an autopilot power cycle
     curTrack: s.curTrack,
     curAlt: s.curAlt,
+    curIAS: s.curIAS,
+    curVS: s.curVS,
+    pitch: s.pitch,
+    bankAngle: s.bankAngle,
     skyview: s.skyview,
     skyviewCdi: s.skyviewCdi,
     svHeadingBug: s.svHeadingBug,
@@ -511,24 +516,29 @@ function emergencyLevel(s) {
 // ---- tick: timers, flight model, auto-transitions ----
 
 function onTick(s, dt) {
+  // Autopilot boot countdown (its LCD comes alive after ~3 s).
   if (s.power === 'booting') {
     const t = s.bootTimer - dt
     if (t <= 0) {
       // come alive with a baro mismatch to sync on the startup checklist (unless
       // the EFIS keeps it synced for us)
       const altDelta = baroAutoSync(s) ? 0 : STARTUP_BARO_DELTA
-      return { ...s, power: 'on', bootTimer: 0, screen: 'NORMAL', altDelta }
+      s = { ...s, power: 'on', bootTimer: 0, screen: 'NORMAL', altDelta }
+    } else {
+      s = { ...s, bootTimer: t }
     }
-    return { ...s, bootTimer: t }
   }
-  if (s.power !== 'on') return s
 
-  // The position-based scenario engine takes over when active; otherwise the
-  // legacy light flight model runs.
+  // The aircraft and its PFD are always live: the flight model runs regardless
+  // of the autopilot's power state (with the AP off it simply coasts). The
+  // position-based scenario engine takes over when active.
   let next = { ...s, ...(s.scenarioActive ? stepScenario(s, dt) : stepFlight(s, dt)) }
 
   // gyro-backup derived flag
   next.gyroMode = isGyro(next)
+
+  // Autopilot logic below only runs when the autopilot is powered on.
+  if (next.power !== 'on') return next
 
   // EFIS that feed the baro-corrected altitude keep the autopilot auto-synced.
   if (baroAutoSync(next)) next.altDelta = 0

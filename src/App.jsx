@@ -4,6 +4,7 @@ import * as E from './sim/events.js'
 import Device, { VARIANTS } from './components/Device.jsx'
 import ConfigPanel from './components/ConfigPanel.jsx'
 import MasterPanel from './components/MasterPanel.jsx'
+import SkyviewKnobs from './components/SkyviewKnobs.jsx'
 import Pfd from './components/Pfd.jsx'
 import ApproachPanel from './components/ApproachPanel.jsx'
 import './styles/app.css'
@@ -12,12 +13,12 @@ export default function App() {
   const [state, dispatch] = useReducer(reducer, initialState)
   const [variant, setVariant] = useState('flat')
 
-  // Sim clock: ~10 Hz while powered.
+  // Sim clock: ~10 Hz, always running — the aircraft (and its PFD) is live
+  // regardless of the autopilot's power state.
   useEffect(() => {
-    if (state.power === 'off') return
     const id = setInterval(() => dispatch(E.tick(0.1)), 100)
     return () => clearInterval(id)
-  }, [state.power])
+  }, [])
 
   const actions = useMemo(
     () => ({
@@ -66,43 +67,42 @@ export default function App() {
 
   return (
     <div className="app">
-      <header className="app-head">
-        <h1>Aerocruze 100 Autopilot Simulator</h1>
-        <p className="sub">
-          Practice the buttonology of the BendixKing Aerocruze 100 (TruTrak Vizion PMA). Tap MODE / ALT, drag the
-          knob to twist, tap it to press, hold it to disengage.
-        </p>
-        <div className="switch-bar">
-          <div className="switch-grp">
-            <span className="switch-lbl">Unit</span>
-            <div className="variant-switch">
-              {Object.entries(VARIANTS).map(([key, v]) => (
-                <button
-                  key={key}
-                  className={'var-btn' + (variant === key ? ' active' : '')}
-                  onClick={() => setVariant(key)}
-                >
-                  {v.label}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-      </header>
-
       <main className="app-main">
-        {/* Left: autopilot simulator + tabbed systems controls */}
+        {/* Left: title, autopilot simulator, tabbed controls */}
         <div className="col col-left">
+          <header className="app-head">
+            <h1>Aerocruze 100 Autopilot Simulator</h1>
+            <p className="sub">Practice the buttonology of the BendixKing Aerocruze 100 (TruTrak Vizion PMA).</p>
+            <div className="switch-bar">
+              <span className="switch-lbl">Unit</span>
+              <div className="variant-switch">
+                {Object.entries(VARIANTS).map(([key, v]) => (
+                  <button
+                    key={key}
+                    className={'var-btn' + (variant === key ? ' active' : '')}
+                    onClick={() => setVariant(key)}
+                  >
+                    {v.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </header>
           <Device variant={variant} state={state} dispatch={dispatch} actions={actions} />
           <ConfigPanel state={state} actions={actions} />
+          <p className="app-foot">
+            <kbd>M</kbd> mode · <kbd>A</kbd> alt · <kbd>←</kbd>/<kbd>→</kbd> twist (<kbd>Shift</kbd> fine) ·
+            <kbd>Enter</kbd> press · <kbd>Backspace</kbd> hold. Familiarization only — not for flight use.
+          </p>
         </div>
 
         {/* Center: primary flight display + aircraft master */}
         <div className="col col-center">
-          <div className="cfg-group">
+          <div className="cfg-group pfd-card">
             <h3>Primary Flight Display</h3>
             <Pfd state={state} actions={actions} />
           </div>
+          <SkyviewKnobs state={state} actions={actions} />
           <MasterPanel state={state} actions={actions} />
         </div>
 
@@ -111,17 +111,6 @@ export default function App() {
           <ApproachPanel state={state} actions={actions} />
         </div>
       </main>
-
-      <footer className="app-foot">
-        <p>
-          Keyboard: <kbd>M</kbd> mode · <kbd>A</kbd> alt · <kbd>←</kbd>/<kbd>→</kbd> twist (<kbd>Shift</kbd> = fine) ·
-          <kbd>Enter</kbd> press · <kbd>Backspace</kbd> hold/disengage.
-        </p>
-        <p className="app-disclaimer">
-          This is an interpretation of the autopilot display; accuracy to the real device will vary.
-          For familiarization training only — not for navigation or flight use.
-        </p>
-      </footer>
     </div>
   )
 }

@@ -74,9 +74,10 @@ export function userVerticalTargetVS(s) {
 }
 
 export function stepFlight(s, dt) {
-  if (s.power !== 'on') return {}
+  if (s.power === 'off' && s.groundSpeed <= 10) return {} // parked & unpowered: nothing to integrate
   const patch = {}
-  const onLpv = s.approachActive && s.skyviewCdi === 'flightplan'
+  // the scripted LPV demo only flies the aircraft while the AP is engaged
+  const onLpv = s.apEngaged && s.approachActive && s.skyviewCdi === 'flightplan'
 
   // ---- LPV phase bookkeeping ----
   // TURN: turning to intercept -> ARM: established, glideslope falling toward

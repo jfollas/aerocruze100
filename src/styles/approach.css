@@ -1,30 +1,46 @@
-/* RNAV (GPS) RWY 10 approach trainer panel */
+/* RNAV (GPS) RWY 10 approach trainer panel — fills the right column height */
 .apch {
   background: #11151c;
   border: 1px solid #2a3340;
   border-radius: 10px;
-  padding: 14px 16px 16px;
+  padding: 12px 14px 14px;
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
 }
 .apch-head {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
   align-items: stretch;
 }
-.apch-title h3 {
-  margin: 0 0 4px;
-  font-size: 1rem;
+.apch-titlebar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.apch-titlebar h3 {
+  margin: 0;
+  font-size: 0.92rem;
   color: #dfe6f0;
 }
-.apch-title p {
-  margin: 0;
-  max-width: 62ch;
-  font-size: 0.78rem;
-  line-height: 1.5;
-  color: #93a1b4;
+.apch-info {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1px solid #3f4d5e;
+  background: #141a22;
+  color: #9fb6ff;
+  font: italic 700 0.82rem/1 Georgia, 'Times New Roman', serif;
+  cursor: pointer;
 }
-.apch-title b {
-  color: #c8d4e2;
+.apch-info:hover {
+  border-color: #6fa8ff;
+  color: #cfe0ff;
 }
 .apch-ctrls {
   display: flex;
@@ -85,26 +101,89 @@
 }
 
 .apch-views {
-  margin-top: 12px;
+  margin-top: 10px;
+  flex: 1;
+  min-height: 0;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
 }
 .apch-map {
+  flex: 1;
+  min-height: 0;
   background: #fff;
   border: 1px solid #2a3340;
   border-radius: 8px;
   overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
+/* fit the (portrait) plate to the available height */
 .apch-map svg {
   display: block;
-  width: 100%;
-  height: auto;
+  height: 100%;
+  width: auto;
+  max-width: 100%;
 }
 .apch-side {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
+}
+
+/* instructions modal (opened by the info button) */
+.apch-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: rgba(4, 7, 11, 0.66);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.apch-modal-box {
+  max-width: 540px;
+  width: 100%;
+  max-height: 80vh;
+  overflow-y: auto;
+  background: #161c25;
+  border: 1px solid #2c3744;
+  border-radius: 12px;
+  padding: 16px 20px 20px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
+}
+.apch-modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+.apch-modal-head h4 {
+  margin: 0;
+  font-size: 1rem;
+  color: #eaf2ff;
+}
+.apch-modal-x {
+  border: 0;
+  background: transparent;
+  color: #9aa7b8;
+  font-size: 1.4rem;
+  line-height: 1;
+  cursor: pointer;
+}
+.apch-modal-x:hover {
+  color: #eaf2ff;
+}
+.apch-modal-box p {
+  margin: 0 0 10px;
+  font-size: 0.84rem;
+  line-height: 1.55;
+  color: #aebccd;
+}
+.apch-modal-box b {
+  color: #dfe6f0;
 }
 
 /* aircraft icon (both views) */

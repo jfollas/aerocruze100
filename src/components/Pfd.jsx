@@ -1,5 +1,6 @@
 import { useRef } from 'react'
 import { mod360 } from '../sim/flight.js'
+import { FINAL_CRS_MAG } from '../sim/geo.js'
 import '../styles/pfd.css'
 
 // A compact glass-cockpit PFD loosely based on the Dynon SkyView: attitude
@@ -143,11 +144,21 @@ export default function Pfd({ state, actions }) {
   const cdiSources = ['heading', 'flightplan', 'navaid']
   const cdiLabel = { heading: 'HDG', flightplan: 'GPS', navaid: 'NAV' }[skyviewCdi]
   const cdiColor = { flightplan: '#e641d6', navaid: '#28d07a' }[skyviewCdi] // GPS magenta, NAV green
+  // selected-source label colour: HDG white, NAV green, GPS magenta
+  const cdiSrcColor = { heading: '#ffffff', flightplan: '#e641d6', navaid: '#28d07a' }[skyviewCdi]
   const showCdi = skyviewCdi !== 'heading' // HDG mode has no course needle
-  // The course needle points along the active GPS flight-plan leg (its desired
-  // track), which is independent of the heading bug; it falls back to the bug
-  // when no flight-plan course is available.
-  const cdiCourse = skyviewCdi === 'flightplan' && state.gpsDtk != null ? state.gpsDtk : svHeadingBug
+  // The GPS and NAV course needles are independent of the heading bug: GPS
+  // points along the active flight-plan leg (its desired track), falling back to
+  // the final approach course when no plan is active; NAV shows its selected
+  // course. (HDG mode has no needle, so the bug value there is unused.)
+  const cdiCourse =
+    skyviewCdi === 'flightplan'
+      ? state.gpsDtk != null
+        ? state.gpsDtk
+        : FINAL_CRS_MAG
+      : skyviewCdi === 'navaid'
+        ? FINAL_CRS_MAG
+        : svHeadingBug
   const cdiDevPx = clamp(state.cdiDev || 0, -3, 3) * CDI_DOT // deviation bar offset (3 dots full scale)
   // TO/FROM flag: 'TO' points toward the course head, 'FROM' toward the tail
   // (flips when the active waypoint is behind). Defaults to TO when a course is
@@ -160,13 +171,14 @@ export default function Pfd({ state, actions }) {
   const tfApexY = cdiToFrom === 'FROM' ? tfBaseY + 11 : tfBaseY - 11
   const cycleCdi = () => set({ skyviewCdi: cdiSources[(cdiSources.indexOf(skyviewCdi) + 1) % cdiSources.length] })
 
-  // bug Y positions (clamped to the tape so an off-scale bug parks at the edge)
-  const altBugY = clamp(YC + (curAlt - svAltBug) * PPF, TOP + 6, BOT - 6)
+  // bug Y positions. The altitude bug rides the tape unclamped so it scrolls off
+  // and clips out of view once the target leaves the displayed range.
+  const altBugY = YC + (curAlt - svAltBug) * PPF
   const vsBugY = clamp(YC - svVsBug * PPV, TOP + 6, BOT - 6)
   const vsY = clamp(YC - curVS * PPV, TOP + 4, BOT - 4)
 
   return (
-    <div className={'pfd' + (state.power === 'off' ? ' pfd-off' : '')}>
+    <div className="pfd">
       <svg ref={svgRef} className="pfd-svg" viewBox={`0 0 ${VB_W} ${VB_H}`} role="img" aria-label="Primary flight display">
         <defs>
           <clipPath id="attClip">
@@ -248,6 +260,12 @@ export default function Pfd({ state, actions }) {
           />
           <text x={SPD_X + SPD_W - 6} y={YC + 4} className="pfd-readout-val" textAnchor="end">{Math.round(curIAS)}</text>
         </g>
+        {/* ground-speed badge under the speed tape: small "GS" left, value right */}
+        <g pointerEvents="none">
+          <rect x={SPD_X} y={BOT + 4} width={SPD_W} height={17} rx="2" className="pfd-gs-badge" />
+          <text x={SPD_X + 4} y={BOT + 16} className="pfd-gs-lbl" textAnchor="start">GS</text>
+          <text x={SPD_X + SPD_W - 4} y={BOT + 16} className="pfd-gs-val" textAnchor="end">{Math.round(state.groundSpeed)}</text>
+        </g>
 
         {/* ===== Altitude tape ===== drag the tape to set the initial altitude;
             drag the bug to set the altitude target */}
@@ -263,9 +281,12 @@ export default function Pfd({ state, actions }) {
             )
           })}
         </g>
-        {/* altitude bug — small vertical marker, notch on the inner side; drag it to set the target */}
+        {/* altitude bug — small vertical marker, notch on the inner side; drag it
+            to set the target. Clipped to the tape so it hides once off-scale. */}
         {svAltBugSet && (
-          <path d={tapeBug(ALT_X, altBugY, 9, 18, 5)} className="pfd-bug" {...handlers('alt')} onWheel={wheel('alt')} style={{ cursor: 'ns-resize' }} />
+          <g clipPath="url(#altClip)">
+            <path d={tapeBug(ALT_X, altBugY, 9, 18, 5)} className="pfd-bug" {...handlers('alt')} onWheel={wheel('alt')} style={{ cursor: 'ns-resize' }} />
+          </g>
         )}
         {/* numeric value flag — its pointer apex matches the bug notch (ALT_X+4) */}
         <g pointerEvents="none">
@@ -425,7 +446,7 @@ export default function Pfd({ state, actions }) {
         <div className="pfd-chips">
           <button className="pfd-chip pfd-chip-hdg" onClick={cycleCdi} title="Cycle CDI source">
             <span className="pfd-chip-lbl">CDI</span>
-            <span className="pfd-chip-val">{cdiLabel}</span>
+            <span className="pfd-chip-val" style={{ color: cdiSrcColor }}>{cdiLabel}</span>
           </button>
           <div className="pfd-chip">
             <span className="pfd-chip-lbl">HDG</span>

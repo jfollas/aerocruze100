@@ -47,7 +47,7 @@ function glidepathAlt(dThrNm) {
 }
 
 export function stepScenario(s, dt) {
-  if (s.power !== 'on') return {}
+  if (s.power === 'off' && s.groundSpeed <= 10) return {} // parked & unpowered
   const patch = {}
   const gs = s.groundSpeed > 10 ? s.groundSpeed : 0
 

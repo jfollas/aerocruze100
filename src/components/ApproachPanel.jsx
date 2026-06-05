@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import ApproachMap from './ApproachMap.jsx'
 import { AP_MIN_MSL } from '../sim/geo.js'
 import '../styles/approach.css'
@@ -25,19 +26,18 @@ export default function ApproachPanel({ state, actions }) {
   const set = actions.setConfig
   const active = state.scenarioActive
   const warn = active && state.apEngaged && state.curAlt <= AP_MIN_MSL
+  const [showInfo, setShowInfo] = useState(false)
 
   const vmLabel = { GS_ARM: 'GS ARM', GS_CPLD: 'GS CPLD', ALTHOLD: 'ALT', SEL: 'ALT SEL', SVS: 'VS' }[state.verticalMode] || '—'
 
   return (
     <section className="apch">
       <div className="apch-head">
-        <div className="apch-title">
+        <div className="apch-titlebar">
           <h3>RNAV (GPS) RWY 10 · Wood County (1G0)</h3>
-          <p>
-            Set the nav source &amp; modes for the job: <b>GNS430W</b> + engage + MODE→<b>GPSS</b> flies the plan and
-            couples the LPV glidepath at ZIMBO (you manage altitude to the FAF). <b>SkyView</b> lets you hand-fly with
-            the HDG/ALT/VS bugs — no glidepath.
-          </p>
+          <button className="apch-info" onClick={() => setShowInfo(true)} title="How to fly this approach" aria-label="Instructions">
+            i
+          </button>
         </div>
         <div className="apch-ctrls">
           <span className="apch-ctrl-lbl">Start at IAF</span>
@@ -57,6 +57,32 @@ export default function ApproachPanel({ state, actions }) {
           </div>
         </div>
       </div>
+
+      {showInfo && (
+        <div className="apch-modal" role="dialog" aria-modal="true" onClick={() => setShowInfo(false)}>
+          <div className="apch-modal-box" onClick={(e) => e.stopPropagation()}>
+            <div className="apch-modal-head">
+              <h4>Flying the RNAV (GPS) RWY 10</h4>
+              <button className="apch-modal-x" onClick={() => setShowInfo(false)} aria-label="Close">×</button>
+            </div>
+            <p>
+              Set the nav source &amp; modes for the job. With <b>GNS430W</b>: engage, then MODE → <b>GPSS</b> — the GPS
+              flies the published plan and couples the LPV glidepath at ZIMBO. You manage the altitude down to the FAF
+              (e.g. ALT HOLD 2300), then the autopilot tracks the 3.04° path to the runway. The autopilot is not
+              authorized below 700 ft AGL — disconnect and hand-fly when the warning shows.
+            </p>
+            <p>
+              With <b>SkyView</b> as the source you hand-fly using the HDG / ALT / VS bugs (no glidepath coupling) — handy
+              to get a feel for the bugs.
+            </p>
+            <p>
+              Pick a start fix: <b>LEYIR</b> / <b>WUDAT</b> are the straight-in T-bar arms; <b>UBAYA</b> flies the
+              hold-in-lieu procedure turn — the 430W picks the entry (direct from the west, teardrop from the SE,
+              parallel from the NE).
+            </p>
+          </div>
+        </div>
+      )}
 
       {warn && (
         <div className="apch-warn" role="alert">
