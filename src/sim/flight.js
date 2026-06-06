@@ -15,18 +15,6 @@ const PITCH_RESPONSE = 2 // how quickly pitch settles toward its target (1/sec)
 // leads the target by 10% of the vertical speed (e.g. 50 ft at 500 fpm).
 export const ALT_CAPTURE_GAIN = 10
 
-// LPV approach (vertical guidance shown right of the HSI when on a GPS LPV
-// approach). Scripted by distance to the threshold: turn to intercept the
-// course, capture the final approach at 7 NM with the glideslope one dot high,
-// fly it down to centred at 5 NM, then couple and descend at 90 kt / -500 fpm.
-const GS_START_ALT = 3000 // ft, altitude when the approach is activated
-const GS_PLATFORM_ALT = 2500 // ft, preselected level-off / glideslope intercept altitude
-const GS_PRE_VS = -750 // fpm descent from the start altitude down to the platform
-const GS_APPROACH_IAS = 90 // kt flown on the approach
-const GS_DESCENT = -500 // fpm tracked down the glidepath once coupled
-const GS_ARM_NM = 7 // NM out where the final approach course is intercepted
-const GS_CPLD_NM = 5 // NM out where the glideslope centres and couples
-
 // Signed shortest angular difference a->b in (-180,180]
 export function angleDiff(a, b) {
   let d = ((b - a + 540) % 360) - 180
@@ -80,29 +68,9 @@ export function userVerticalTargetVS(s) {
 export function stepFlight(s, dt) {
   if (s.power === 'off' && s.groundSpeed <= 10) return {} // parked & unpowered: nothing to integrate
   const patch = {}
-  // the scripted LPV demo only flies the aircraft while the AP is engaged
-  const onLpv = s.apEngaged && s.approachActive && s.skyviewCdi === 'flightplan'
-
-  // ---- LPV phase bookkeeping ----
-  // TURN: turning to intercept -> ARM: established, glideslope falling toward
-  // centre -> CPLD: glideslope centred, descending. Entering the approach snaps
-  // us level at the intercept altitude.
-  let lpvPhase = onLpv ? s.lpvPhase || 'TURN' : null
-  let gsDist = onLpv ? s.gsDist : null
-  const altBase = onLpv && !s.lpvPhase ? GS_START_ALT : s.curAlt
 
   // ---- Lateral ----
-  if (onLpv) {
-    // Turn to the heading the magenta GPS needle points to (the heading bug).
-    const { bankAngle, curTrack, d } = lateralStep(s, dt, mod360(s.svHeadingBug))
-    patch.bankAngle = bankAngle
-    patch.curTrack = curTrack
-    // established once we've rolled out on the intercept heading -> arm the GS
-    if (lpvPhase === 'TURN' && Math.abs(d) < 1 && Math.abs(bankAngle) < 1) {
-      lpvPhase = 'ARM'
-      gsDist = GS_ARM_NM
-    }
-  } else if (s.apEngaged && !s.emergencyLevel && !s.gyroMode) {
+  if (s.apEngaged && !s.emergencyLevel && !s.gyroMode) {
     // Eased, coordinated turn toward the selected track.
     const { bankAngle, curTrack } = lateralStep(s, dt, s.selTrack)
     patch.bankAngle = bankAngle
@@ -121,35 +89,15 @@ export function stepFlight(s, dt) {
   }
 
   // ---- Vertical ----
-  let targetVS = 0
-  if (onLpv) {
-    // March inbound at 90 kt. The magenta glideslope falls from one dot above
-    // centre (7 NM) to centred at 5 NM, where it couples and we start down.
-    if (gsDist != null) gsDist = Math.max(0, gsDist - (GS_APPROACH_IAS / 3600) * dt)
-    if (lpvPhase === 'ARM' && gsDist <= GS_CPLD_NM) lpvPhase = 'CPLD'
-    // deviation in dots: +1 at the arm point, easing to 0 at the couple point
-    const dev = lpvPhase === 'ARM' ? Math.max(0, Math.min(1, (gsDist - GS_CPLD_NM) / (GS_ARM_NM - GS_CPLD_NM))) : 0
-    if (lpvPhase === 'CPLD') {
-      targetVS = GS_DESCENT // coupled — track the glidepath down at -500 fpm
-    } else {
-      // descend from the start altitude to the preselected platform at -750 fpm,
-      // easing into the level-off, then hold it until the glideslope couples
-      const altErr = GS_PLATFORM_ALT - s.curAlt
-      targetVS = Math.max(GS_PRE_VS, Math.min(-GS_PRE_VS, altErr * ALT_CAPTURE_GAIN))
-    }
-    patch.lpvPhase = lpvPhase
-    patch.gsDist = gsDist
-    patch.gsDev = dev
-  } else {
-    // not on an LPV approach — clear the approach state so it re-arms next time
-    patch.lpvPhase = null
-    patch.gsDist = null
-    patch.gsDev = 0
-    targetVS = userVerticalTargetVS(s)
-  }
+  // The position-based scenario engine owns the LPV glidepath; this light model
+  // just clears any GS state and follows the autopilot's current vertical mode.
+  patch.lpvPhase = null
+  patch.gsDist = null
+  patch.gsDev = 0
+  const targetVS = userVerticalTargetVS(s)
   const newVS = approach(s.curVS, targetVS, Math.abs(targetVS - s.curVS) * Math.min(1, VS_RESPONSE * dt))
   // Touchdown: clamp at the runway (TDZE) and bring the speed to zero.
-  const rawAlt = altBase + (newVS / 60) * dt
+  const rawAlt = s.curAlt + (newVS / 60) * dt
   const onGround = rawAlt <= TDZE
   patch.curAlt = onGround ? TDZE : rawAlt
   patch.curVS = onGround ? 0 : newVS
