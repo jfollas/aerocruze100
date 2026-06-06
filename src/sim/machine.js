@@ -19,10 +19,11 @@ const round = (x, step) => Math.round(x / step) * step
 export const STARTUP_BARO_DELTA = 200 // mismatch present at power-up (startup checklist)
 const PREAPP_BARO_DELTA = 150 // re-introduced when arming GPSS for an approach (pre-procedure check)
 
-// True when the connected EFIS feeds the autopilot a digital altitude, keeping
-// it auto-synced (no baro mismatch): Aspen/G5 over ARINC, or the SkyView source.
+// True when the connected EFIS feeds the autopilot a digital baro-corrected
+// altitude over ARINC, keeping it auto-synced (no mismatch): Aspen and G5 only.
+// The SkyView cannot do this, so it still needs a manual ALT SYNC (a downside).
 export function baroAutoSync(s) {
-  return s.arinc === 'aspen' || s.arinc === 'g5' || s.skyview === 'on'
+  return s.arinc === 'aspen' || s.arinc === 'g5'
 }
 
 export const initialState = {
@@ -296,7 +297,7 @@ function onMode(s) {
 // the heading bug. Vertical follows the VS bug, or transitions to the altitude
 // bug when one is set (capturing into ALT HOLD).
 function enterSkyview(s) {
-  const climbing = s.svAltBugSet && Math.abs(s.svAltBug - s.curAlt) >= 50
+  const climbing = s.svAltBugSet && Math.abs(s.svAltBug - (s.curAlt + s.altDelta)) >= 50
   return {
     ...s,
     lateralMode: 'SKYVIEW',
@@ -457,9 +458,10 @@ function confirmAltSelect(s) {
 // ---- engage / disengage ----
 
 function engage(s) {
-  // Engaging while already in SkyView mode (entered from AP OFF) stays in SkyView
-  // and keeps following the SkyView bugs (Install Manual §10.2).
-  if (s.skyview === 'on' && s.lateralMode === 'SKYVIEW') {
+  // With a SkyView as the nav source, engaging follows the SkyView bugs (there is
+  // no reason to engage into plain TRK), so the autopilot immediately flies the
+  // HDG/ALT/VS bugs (Install Manual §10.2).
+  if (s.skyview === 'on') {
     return { ...enterSkyview(s), apEngaged: true, preselectArmed: false }
   }
   const lateral = lateralCycle(s).includes(s.lateralMode) ? s.lateralMode : 'TRK'
@@ -559,12 +561,15 @@ function onTick(s, dt) {
     if (next.skyview !== 'on') {
       next = exitSkyview(next) // signal lost -> drop out
     } else {
+      // Through the SkyView the autopilot follows the bugs vertically (the GPS
+      // glideslope is not coupled), managing altitude with the ALT/VS bugs.
       next = { ...next, selTrack: mod360(next.svHeadingBug), selVS: next.svVsBug, selAlt: next.svAltBug }
+      const apAlt = next.curAlt + next.altDelta // the autopilot's altimeter reading
       if (!next.svAltBugSet) {
         next.verticalMode = 'SVS' // no alt bug -> follow the VS bug
       } else if (next.verticalMode !== 'SEL' && next.verticalMode !== 'ALTHOLD') {
-        next.verticalMode = Math.abs(next.svAltBug - next.curAlt) >= 50 ? 'SEL' : 'ALTHOLD'
-      } else if (next.verticalMode === 'ALTHOLD' && Math.abs(next.svAltBug - next.curAlt) >= 50) {
+        next.verticalMode = Math.abs(next.svAltBug - apAlt) >= 50 ? 'SEL' : 'ALTHOLD'
+      } else if (next.verticalMode === 'ALTHOLD' && Math.abs(next.svAltBug - apAlt) >= 50) {
         next.verticalMode = 'SEL' // alt bug moved -> resume the transition
       }
     }

@@ -85,11 +85,11 @@ describe('GNS430W + GPSS flies the published approach', () => {
   })
 })
 
-describe('SkyView source flies the bugs with no glideslope coupling', () => {
-  it('follows the heading bug and never couples a glideslope', () => {
+describe('SkyView source (Install Manual §10)', () => {
+  it('with the CDI on HEADING follows the heading bug, no glideslope', () => {
     let s = loaded('LEYIR', { skyview: 'on' })
-    s = reducer(s, E.mode()) // enter SkyView mode
-    s = reducer(s, E.knobPress()) // engage (stays in SkyView)
+    s = reducer(s, E.setConfig({ skyviewCdi: 'heading' })) // CDI not on a flight plan
+    s = reducer(s, E.knobPress()) // engage -> SkyView
     expect(s.lateralMode).toBe('SKYVIEW')
     const x0 = s.curX
     s = fly(s, 60)
@@ -97,6 +97,25 @@ describe('SkyView source flies the bugs with no glideslope coupling', () => {
     expect(s.verticalMode).not.toBe('GS_CPLD')
     expect(s.gsDev).toBe(0)
     expect(s.lpvPhase).toBe(null)
+  })
+
+  it('with the CDI on a flight plan flies the GPS course laterally but does NOT couple the glideslope', () => {
+    // The SkyView passes the lateral GPS course + the bugs, not the GPS vertical
+    // guidance — so it's lateral GPS with manual/stepdown vertical via the bugs.
+    let s = loaded('WUDAT', { skyview: 'on' })
+    s = { ...s, altDelta: 0 }
+    s = reducer(s, E.knobPress()) // engage -> SkyView; CDI is on the flight plan
+    s = { ...s, svAltBug: 2300, svAltBugSet: true } // hold the platform on the SkyView alt bug
+    expect(s.skyviewCdi).toBe('flightplan')
+    let coupled = false
+    for (let t = 0; t < 700; t += 0.5) {
+      s = reducer(s, E.tick(0.5))
+      if (s.verticalMode === 'GS_CPLD') coupled = true
+    }
+    expect(s.activeLeg).toBeGreaterThanOrEqual(2) // sequenced down the published plan (lateral GPS)
+    expect(coupled).toBe(false) // no glideslope coupling through the SkyView
+    expect(s.lpvPhase).toBe(null)
+    expect(Math.round(s.curAlt)).toBe(2300) // vertical held at the alt bug, not flown down the GS
   })
 })
 

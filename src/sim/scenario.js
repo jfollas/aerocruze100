@@ -68,7 +68,14 @@ export function stepScenario(s, dt) {
   const gtCur = mod360((Math.atan2(gx0, gy0) * 180) / Math.PI)
 
   // ===== Lateral: pick the commanded GROUND track =====
-  const onGpss = s.apEngaged && s.lateralMode === 'GPSS' && s.gpsData === 'ifr'
+  // The autopilot flies the GPS flight plan (lateral course + LPV glidepath)
+  // either via GPSS with the 430W, OR in SkyView mode when the SkyView CDI is
+  // showing a flight plan — the SkyView passes the GPS course through, so it's
+  // the same guidance as the 430W (Install Manual §10).
+  const onGpss =
+    s.apEngaged &&
+    ((s.lateralMode === 'GPSS' && s.gpsData === 'ifr') ||
+      (s.lateralMode === 'SKYVIEW' && s.skyviewCdi === 'flightplan'))
   const plan = s.scenarioIaf ? PLANS[s.scenarioIaf] : null
   let targetTrack = s.selTrack
   let activeLeg = s.activeLeg
@@ -131,7 +138,11 @@ export function stepScenario(s, dt) {
   const pos = { x: patch.curX, y: patch.curY }
 
   // ===== Vertical =====
-  const onApproach = onGpss && s.approachActive && plan
+  // The glideslope only couples on the direct IFR-GPS (430W) path. Through the
+  // SkyView the autopilot gets the lateral course + the bugs but NOT the GPS
+  // vertical guidance, so the pilot flies the vertical with the ALT/VS bugs
+  // (stepdowns for LNAV, or hand-flying an LPV glideslope) — no GS coupling.
+  const onApproach = s.apEngaged && s.lateralMode === 'GPSS' && s.gpsData === 'ifr' && s.approachActive && plan
   const dThr = nmBetween(pos, FIX_XY.RW10)
   const gpAlt = glidepathAlt(dThr)
 
@@ -165,8 +176,15 @@ export function stepScenario(s, dt) {
     targetVS = userVerticalTargetVS(s) // user manages the altitude (ALT HOLD / SEL / SVS)
   }
   const newVS = approach(s.curVS, targetVS, Math.abs(targetVS - s.curVS) * Math.min(1, VS_RESPONSE * dt))
-  patch.curVS = newVS
-  patch.curAlt = Math.max(0, s.curAlt + (newVS / 60) * dt)
+  // Touchdown: clamp at the runway (TDZE) and bring the speed to zero.
+  const rawAlt = s.curAlt + (newVS / 60) * dt
+  const onGround = rawAlt <= TDZE
+  patch.curAlt = onGround ? TDZE : rawAlt
+  patch.curVS = onGround ? 0 : newVS
+  if (onGround) {
+    patch.groundSpeed = 0
+    patch.curGS = 0
+  }
 
   // glideslope deviation for the PFD GSI (+ = below path, fly up)
   patch.gsDev = onApproach ? clamp(-(patch.curAlt - gpAlt) / GS_DOT_FT, -2, 2) : 0
@@ -179,7 +197,7 @@ export function stepScenario(s, dt) {
   // ===== Airspeed & pitch =====
   // IAS follows the simulated ground speed (set via the speed-tape drag or the
   // Ground speed control), eased.
-  const { curIAS, pitch } = perfStep(s, dt, newVS, Math.max(0, s.groundSpeed))
+  const { curIAS, pitch } = perfStep(s, dt, patch.curVS, onGround ? 0 : Math.max(0, s.groundSpeed))
   patch.curIAS = curIAS
   patch.pitch = pitch
 

@@ -2,7 +2,7 @@
 // returns a partial patch of the *actual* aircraft values (curTrack, curAlt, curVS,
 // bankAngle). Selected/target values are user-driven and never changed here.
 
-import { magToTrue, trueToMag, FIELD_ELEV } from './geo.js'
+import { magToTrue, trueToMag, FIELD_ELEV, TDZE } from './geo.js'
 import { windVector, windAt } from './wind.js'
 
 export const TURN_RATE = 6 // deg/sec of heading change at full bank
@@ -149,19 +149,23 @@ export function stepFlight(s, dt) {
     targetVS = userVerticalTargetVS(s)
   }
   const newVS = approach(s.curVS, targetVS, Math.abs(targetVS - s.curVS) * Math.min(1, VS_RESPONSE * dt))
-  patch.curVS = newVS
-  patch.curAlt = Math.max(0, altBase + (newVS / 60) * dt)
+  // Touchdown: clamp at the runway (TDZE) and bring the speed to zero.
+  const rawAlt = altBase + (newVS / 60) * dt
+  const onGround = rawAlt <= TDZE
+  patch.curAlt = onGround ? TDZE : rawAlt
+  patch.curVS = onGround ? 0 : newVS
+  if (onGround) patch.groundSpeed = 0
 
   // ---- Airspeed & pitch (light model for the PFD) ----
   // The indicated airspeed follows the simulated ground speed (set via the
   // speed-tape drag or the Ground speed control), eased.
-  const targetIAS = Math.max(0, s.groundSpeed)
-  const { curIAS, pitch } = perfStep(s, dt, newVS, targetIAS)
+  const targetIAS = onGround ? 0 : Math.max(0, s.groundSpeed)
+  const { curIAS, pitch } = perfStep(s, dt, patch.curVS, targetIAS)
   patch.curIAS = curIAS
   patch.pitch = pitch
 
   // ---- Ground speed & wind readout (airspeed +/- the wind along the heading) ----
-  const tas = Math.max(0, s.groundSpeed)
+  const tas = onGround ? 0 : Math.max(0, s.groundSpeed)
   const wind = tas > 0 ? windVector(s.curAlt - FIELD_ELEV, s.windDir, s.windSpd) : { wx: 0, wy: 0 }
   const hdgr = (magToTrue(patch.curTrack) * Math.PI) / 180
   const gx = tas * Math.sin(hdgr) + wind.wx

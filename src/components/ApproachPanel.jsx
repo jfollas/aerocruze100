@@ -72,8 +72,11 @@ export default function ApproachPanel({ state, actions }) {
               authorized below 700 ft AGL — disconnect and hand-fly when the warning shows.
             </p>
             <p>
-              With <b>SkyView</b> as the source you hand-fly using the HDG / ALT / VS bugs (no glidepath coupling) — handy
-              to get a feel for the bugs.
+              With <b>SkyView</b> as the source, engaging follows the SkyView bugs. Set the PFD <b>CDI</b> to <b>GPS</b>
+              (a flight plan on the CDI) and the autopilot enters GPS mode — but only the <b>lateral</b> course passes
+              through; the glideslope does <b>not</b> couple. You fly the vertical with the <b>ALT</b>/<b>VS</b> bugs, which
+              is handy for <b>LNAV</b> approaches with stepdowns (bug each stepdown / the MDA). For a coupled <b>LPV</b>
+              glidepath use the 430W. Note the SkyView can't auto-sync the altimeter, so ALT SYNC first.
             </p>
             <p>
               Pick a start fix: <b>LEYIR</b> / <b>WUDAT</b> are the straight-in T-bar arms. At <b>UBAYA</b>, arriving

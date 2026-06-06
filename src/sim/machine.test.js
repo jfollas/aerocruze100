@@ -250,10 +250,9 @@ describe('safety features', () => {
 })
 
 describe('Dynon SkyView mode (Install Manual §10)', () => {
-  it('MODE enters SkyView mode, grabbing the SkyView bugs', () => {
+  it('engaging with a SkyView source enters SkyView, grabbing the bugs', () => {
     let s = poweredOn({ skyview: 'on', svHeadingBug: 284, svAltBug: 3500, svVsBug: 500, curAlt: 1500 })
-    s = reducer(s, E.knobPress()) // engage
-    s = reducer(s, E.mode()) // enter SkyView
+    s = reducer(s, E.knobPress()) // engage -> SkyView (the nav source)
     expect(s.lateralMode).toBe('SKYVIEW')
     expect(s.selTrack).toBe(284)
     expect(s.selAlt).toBe(3500)
@@ -267,14 +266,12 @@ describe('Dynon SkyView mode (Install Manual §10)', () => {
   it('shows GPS bottom-left when the SkyView CDI follows a flight plan', () => {
     let s = poweredOn({ skyview: 'on', skyviewCdi: 'flightplan' })
     s = reducer(s, E.knobPress())
-    s = reducer(s, E.mode())
     expect(deriveDisplay(s).bottomLeft).toEqual({ text: 'GPS' })
   })
 
   it('the knob does nothing in SkyView mode (commands come from SkyView)', () => {
     let s = poweredOn({ skyview: 'on', svHeadingBug: 100 })
     s = reducer(s, E.knobPress())
-    s = reducer(s, E.mode())
     const before = s.selTrack
     s = reducer(s, E.knobCw())
     expect(s.selTrack).toBe(before)
@@ -282,9 +279,8 @@ describe('Dynon SkyView mode (Install Manual §10)', () => {
 
   it('MODE again exits SkyView and syncs to current track and VS (§10.2 step 5)', () => {
     let s = poweredOn({ skyview: 'on', curTrack: 160, curVS: 0 })
-    s = reducer(s, E.knobPress())
-    s = reducer(s, E.mode()) // enter
-    s = reducer(s, E.mode()) // exit
+    s = reducer(s, E.knobPress()) // engage -> SkyView
+    s = reducer(s, E.mode()) // MODE exits SkyView
     expect(s.lateralMode).toBe('TRK')
     expect(s.verticalMode).toBe('SVS')
     expect(s.selTrack).toBe(160)
@@ -294,7 +290,6 @@ describe('Dynon SkyView mode (Install Manual §10)', () => {
   it('follows the VS bug when no altitude bug is set', () => {
     let s = poweredOn({ skyview: 'on', svAltBugSet: false, svVsBug: 700 })
     s = reducer(s, E.knobPress())
-    s = reducer(s, E.mode())
     s = reducer(s, E.tick(0.1))
     expect(s.verticalMode).toBe('SVS')
     expect(s.selVS).toBe(700)
@@ -315,7 +310,6 @@ describe('Dynon SkyView mode (Install Manual §10)', () => {
   it('drops out of SkyView if the signal is lost', () => {
     let s = poweredOn({ skyview: 'on' })
     s = reducer(s, E.knobPress())
-    s = reducer(s, E.mode())
     expect(s.lateralMode).toBe('SKYVIEW')
     s = reducer(s, E.setConfig({ skyview: 'off' }))
     s = reducer(s, E.tick(0.1))
