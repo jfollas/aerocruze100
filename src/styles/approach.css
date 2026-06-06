@@ -53,32 +53,22 @@
   text-transform: uppercase;
   color: #8b99ab;
 }
-.apch-iafs {
-  display: flex;
-  gap: 6px;
-}
-.apch-iaf,
-.apch-reset {
+.apch-select {
   background: #141a22;
   border: 1px solid #2c3744;
   border-radius: 7px;
-  padding: 6px 10px;
+  padding: 7px 10px;
   color: #c8d4e2;
   font-size: 0.8rem;
   font-weight: 700;
   cursor: pointer;
 }
-.apch-iaf:hover,
-.apch-reset:hover:not(:disabled) {
+.apch-select:hover {
   border-color: #3f4d5e;
 }
-.apch-iaf.active {
+.apch-select:focus {
+  outline: none;
   border-color: #19a9bd;
-  color: #19d2e6;
-}
-.apch-reset:disabled {
-  opacity: 0.4;
-  cursor: default;
 }
 
 .apch-warn {
@@ -195,6 +185,16 @@
 }
 .apch-plane.off path {
   opacity: 0.5;
+}
+
+/* loaded procedure track on the plan view — half-opacity GPS magenta */
+.apch-course {
+  fill: none;
+  stroke: #e641d6;
+  stroke-width: 8;
+  stroke-opacity: 0.75;
+  stroke-linejoin: round;
+  stroke-linecap: round;
 }
 
 /* 700-AGL autopilot floor drawn over the plate profile (full-page viewBox) */

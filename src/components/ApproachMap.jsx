@@ -1,5 +1,6 @@
 import { PLAN_CHART, worldToChart, PROFILE_CHART, profileX, profileY } from '../sim/chart.js'
 import { magToTrue, FIX_XY, nmBetween, AP_MIN_MSL } from '../sim/geo.js'
+import { PLANS } from '../sim/navplan.js'
 
 // Top-down airplane planform, centred at the origin, nose pointing up (-y).
 const PLANE =
@@ -9,6 +10,34 @@ const PLANE =
 
 const clamp = (x, lo, hi) => Math.max(lo, Math.min(hi, x))
 const toRad = (d) => (d * Math.PI) / 180
+
+// Build a smooth SVG path through {u,v} points with a centripetal Catmull-Rom
+// spline (alpha = 0.5). The course passes through every waypoint, but the
+// course-reversal turns at UBAYA render as curves/half-circles instead of the
+// triangular intercepts you get from straight segments.
+function smoothPath(pts) {
+  const n = pts.length
+  if (n < 3) return pts.map((p, i) => (i ? 'L' : 'M') + p.u + ' ' + p.v).join(' ')
+  const dist = (a, b) => Math.max(Math.hypot(b.u - a.u, b.v - a.v), 1e-4)
+  let d = `M${pts[0].u} ${pts[0].v}`
+  for (let i = 0; i < n - 1; i++) {
+    const p0 = pts[i === 0 ? 0 : i - 1]
+    const p1 = pts[i]
+    const p2 = pts[i + 1]
+    const p3 = pts[i + 2 >= n ? n - 1 : i + 2]
+    const t0 = 0
+    const t1 = t0 + Math.sqrt(dist(p0, p1))
+    const t2 = t1 + Math.sqrt(dist(p1, p2))
+    const t3 = t2 + Math.sqrt(dist(p2, p3))
+    const seg = t2 - t1
+    const m1u = seg * ((p1.u - p0.u) / (t1 - t0) - (p2.u - p0.u) / (t2 - t0) + (p2.u - p1.u) / seg)
+    const m1v = seg * ((p1.v - p0.v) / (t1 - t0) - (p2.v - p0.v) / (t2 - t0) + (p2.v - p1.v) / seg)
+    const m2u = seg * ((p2.u - p1.u) / seg - (p3.u - p1.u) / (t3 - t1) + (p3.u - p2.u) / (t3 - t2))
+    const m2v = seg * ((p2.v - p1.v) / seg - (p3.v - p1.v) / (t3 - t1) + (p3.v - p2.v) / (t3 - t2))
+    d += ` C${p1.u + m1u / 3} ${p1.v + m1v / 3} ${p2.u - m2u / 3} ${p2.v - m2v / 3} ${p2.u} ${p2.v}`
+  }
+  return d
+}
 
 // The to-scale plan view: the entire FAA RNAV (GPS) RWY 10 plate, with the
 // simulated aircraft drawn on the plan view (georeferenced) and again on the
@@ -42,12 +71,18 @@ export default function ApproachMap({ state }) {
 
   const floorY = profileY(AP_MIN_MSL)
 
+  // The loaded procedure track, drawn over the plan view as a magenta course
+  // line (including any course-reversal / hold-entry shape at UBAYA).
+  const coursePlan = state.scenarioActive && state.scenarioIaf && PLANS[state.scenarioIaf]
+  const course = coursePlan ? smoothPath(coursePlan.map((wp) => worldToChart(wp.x, wp.y))) : null
+
   return (
     <div className="apch-map">
       <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label="RNAV (GPS) RWY 10 plate">
         <image href={img} x="0" y="0" width={W} height={H} />
         {/* 700-AGL autopilot floor across the profile section */}
         <line className="apch-floor" x1={PROFILE_CHART.xLeft} y1={floorY} x2={PROFILE_CHART.xRight} y2={floorY} />
+        {course && <path className="apch-course" d={course} />}
         {plan && (
           <g transform={`translate(${plan.x} ${plan.y}) rotate(${plan.rot}) scale(${PLAN_CHART.planeScale})`} className={plan.off ? 'apch-plane off' : 'apch-plane'}>
             <path d={PLANE} />

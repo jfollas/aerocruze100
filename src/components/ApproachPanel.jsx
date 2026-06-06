@@ -40,21 +40,23 @@ export default function ApproachPanel({ state, actions }) {
           </button>
         </div>
         <div className="apch-ctrls">
-          <span className="apch-ctrl-lbl">Start at IAF</span>
-          <div className="apch-iafs" data-ctl="iaf">
+          <span className="apch-ctrl-lbl">Load approach (start at IAF)</span>
+          <select
+            className="apch-select"
+            data-ctl="iaf"
+            value={state.scenarioIaf || ''}
+            onChange={(e) => {
+              const v = e.target.value
+              set(v ? { scenarioActive: true, scenarioIaf: v } : { scenarioActive: false, scenarioIaf: null })
+            }}
+          >
+            <option value="">Not Loaded</option>
             {IAFS.map((f) => (
-              <button
-                key={f.id}
-                className={'apch-iaf' + (state.scenarioIaf === f.id ? ' active' : '')}
-                onClick={() => set({ scenarioActive: true, scenarioIaf: f.id })}
-              >
+              <option key={f.id} value={f.id}>
                 {f.text}
-              </button>
+              </option>
             ))}
-            <button className="apch-reset" disabled={!active} onClick={() => set({ scenarioActive: false, scenarioIaf: null })}>
-              Reset
-            </button>
-          </div>
+          </select>
         </div>
       </div>
 

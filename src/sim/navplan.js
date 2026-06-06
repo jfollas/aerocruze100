@@ -26,38 +26,61 @@ const rad = (d) => (d * Math.PI) / 180
 const unit = (degTrue) => ({ x: Math.sin(rad(degTrue)), y: Math.cos(rad(degTrue)) })
 const add = (p, v, s = 1) => ({ x: p.x + v.x * s, y: p.y + v.y * s })
 const E_IN = unit(INB_T)
-const E_OUT = unit(INB_T + 180)
 const HOLD_SIDE = unit(INB_T + 90) // right of inbound = south (the holding side)
 
-// Inbound leg start (4 NM west of UBAYA) — the rollout point shared by the
-// course-reversal entries below.
-const A = add(U, E_OUT, HOLD_LEG)
 const uwp = { name: 'UBAYA', ...U }
 const tail = TAIL.slice(1).map(wp) // ZIMBO, RW10 (after re-crossing UBAYA inbound)
 
 // From the west you arrive established on the final approach course, so no
 // course reversal is needed — fly straight in (NoPT): UBAYA -> ZIMBO -> RW10.
 const directPlan = [{ name: 'START', ...add(U, E_IN, -5) }, uwp, ...tail]
-// Teardrop: arrive from the NE — your inbound heading (~225°) lands in the
-// teardrop sector. Cross UBAYA, fly the 30°-offset teardrop into the holding
-// (south) side, then turn back onto the inbound leg.
-const TD = add(U, unit(INB_T + 150), HOLD_LEG) // 30° off the outbound, toward the south
+// Teardrop: arrive from the NE (~232° to the fix) in the teardrop sector. Cross
+// UBAYA, fly the outbound course tilted 30° toward the holding side (246°) for
+// one leg, then a standard-rate RIGHT turn (the hold direction) of 210° that
+// rolls out established on the 096° inbound course, and track it back to UBAYA.
+// The 30° offset + standard-rate radius keep the whole turn on the holding side
+// and roll out right on the course (no separate intercept leg needed).
+const TD_OB = INB_T + 150 // 246° = outbound (276°) tilted 30° toward the holding side
+const TD_OUT = (HOLD_R * (1 + Math.cos(rad(30)))) / Math.sin(rad(30)) // leg length to roll out on course
+const TD_C = add(add(U, unit(TD_OB), TD_OUT), unit(TD_OB + 90), HOLD_R) // right-turn center
+const TD_ARC = []
+for (let k = 0; k <= 6; k++) {
+  // sweep 210° with bearing increasing (a right turn) from the outbound end
+  // (k=0) around the holding side to the 096° rollout on the course (k=6)
+  TD_ARC.push({ name: 'td' + k, ...add(TD_C, unit(TD_OB - 90 + (210 * k) / 6), HOLD_R) })
+}
 const teardropPlan = [
   { name: 'START', ...add(U, unit(INB_T - 45), 5) },
   uwp,
-  { name: 'td', ...TD },
-  { name: 'hold', ...A },
+  ...TD_ARC, // outbound end through the 210° right turn onto the inbound course
   uwp,
   ...tail,
 ]
-// Parallel: arrive from the SE — your inbound heading (~315°) lands in the
-// parallel sector. Cross UBAYA, parallel the outbound course on the
-// non-holding (north) side, then turn back to intercept inbound.
-const PAR = add(add(U, E_OUT, HOLD_LEG), HOLD_SIDE, -2 * HOLD_R) // 4 NM west, offset north
+// Parallel: arrive from the SE — inbound heading (~315°) lands in the parallel
+// sector. Cross UBAYA, turn to the outbound course (276°) and fly it for one
+// leg, then a constant standard-rate LEFT turn (opposite the right-hand hold)
+// through 210° to roll out on 066°, hold that until intercepting the 096°
+// inbound course, then track it back to UBAYA. Built as line -> arc -> line ->
+// intercept (the turn sampled into points) so it flies and renders true.
+const OB = INB_T + 180 // outbound course (276°)
+const EH = INB_T - 30 // post-turn heading (066° = a 30° intercept of the inbound)
+const PAR_C = add(add(U, unit(OB), HOLD_LEG), unit(OB - 90), HOLD_R) // left-turn center
+const PAR_ARC = []
+for (let k = 0; k <= 6; k++) {
+  // sweep 210° clockwise-in-bearing-decreasing (a left turn) from the outbound
+  // end (k=0, on the course line) around to the 066° rollout (k=6)
+  PAR_ARC.push({ name: 'pl' + k, ...add(PAR_C, unit(OB + 90 - (210 * k) / 6), HOLD_R) })
+}
+const PAR_ET = PAR_ARC[PAR_ARC.length - 1] // end of the turn, heading 066°
+const ehv = unit(EH)
+// distance along 066° from the rollout to where it crosses the inbound course
+const tInt = -((PAR_ET.x - U.x) * HOLD_SIDE.x + (PAR_ET.y - U.y) * HOLD_SIDE.y) / (ehv.x * HOLD_SIDE.x + ehv.y * HOLD_SIDE.y)
+const PAR_I = add(PAR_ET, ehv, tInt) // intercept point on the 096° course
 const parallelPlan = [
   { name: 'START', ...add(U, unit(INB_T + 45), 5) },
   uwp,
-  { name: 'pl', ...PAR },
+  ...PAR_ARC, // outbound end (on the course) through the 210° left turn
+  { name: 'pi', ...PAR_I }, // roll out and intercept the inbound course
   uwp,
   ...tail,
 ]
