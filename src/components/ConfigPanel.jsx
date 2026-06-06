@@ -104,7 +104,7 @@ export default function ConfigPanel({ state, actions }) {
             onChange={(p) => set({ gpsStatus: p })}
           />
           <Seg
-            label="Ground speed"
+            label="Airspeed"
             value={state.groundSpeed > 10 ? 'fly' : 'gnd'}
             options={[
               { value: 'gnd', text: '< 10 kt' },
@@ -112,6 +112,29 @@ export default function ConfigPanel({ state, actions }) {
             ]}
             onChange={(p) => set({ groundSpeed: p === 'fly' ? 120 : 0 })}
           />
+          <div className="cfg-row">
+            <span className="cfg-label">Wind dir (aloft)</span>
+            <input
+              type="range"
+              min="0"
+              max="350"
+              step="10"
+              value={state.windDir}
+              onChange={(e) => set({ windDir: Number(e.target.value) })}
+            />
+            <span className="cfg-val">{String(state.windDir).padStart(3, '0')}°</span>
+          </div>
+          <div className="cfg-row">
+            <span className="cfg-label">Wind speed (aloft)</span>
+            <input
+              type="range"
+              min="0"
+              max="45"
+              value={state.windSpd}
+              onChange={(e) => set({ windSpd: Number(e.target.value) })}
+            />
+            <span className="cfg-val">{state.windSpd} kt</span>
+          </div>
           <Seg
             label="Trim"
             value={state.trim}

@@ -29,26 +29,15 @@ const E_IN = unit(INB_T)
 const E_OUT = unit(INB_T + 180)
 const HOLD_SIDE = unit(INB_T + 90) // right of inbound = south (the holding side)
 
-// Racetrack (right turns), smoothed into an oval by the fly-by: cross UBAYA,
-// right to the outbound leg (south of the inbound line), around to the inbound
-// leg, back in to UBAYA.
-const B1 = add(U, HOLD_SIDE, 2 * HOLD_R) // outbound leg start (abeam UBAYA, south)
-const B2 = add(B1, E_OUT, HOLD_LEG) // outbound leg end
-const A = add(U, E_OUT, HOLD_LEG) // inbound leg start (4 NM west of UBAYA)
+// Inbound leg start (4 NM west of UBAYA) — the rollout point shared by the
+// course-reversal entries below.
+const A = add(U, E_OUT, HOLD_LEG)
 const uwp = { name: 'UBAYA', ...U }
 const tail = TAIL.slice(1).map(wp) // ZIMBO, RW10 (after re-crossing UBAYA inbound)
 
-// Direct: arrive from the west on the inbound course; turn right into the hold,
-// fly one lap, roll out inbound.
-const directPlan = [
-  { name: 'START', ...add(U, E_IN, -5) },
-  uwp,
-  { name: 'hold', ...B1 },
-  { name: 'hold', ...B2 },
-  { name: 'hold', ...A },
-  uwp,
-  ...tail,
-]
+// From the west you arrive established on the final approach course, so no
+// course reversal is needed — fly straight in (NoPT): UBAYA -> ZIMBO -> RW10.
+const directPlan = [{ name: 'START', ...add(U, E_IN, -5) }, uwp, ...tail]
 // Teardrop: arrive from the SE (holding side); cross UBAYA, fly the 30°-offset
 // teardrop into the holding side, then turn back onto the inbound leg.
 const TD = add(U, unit(INB_T + 150), HOLD_LEG) // 30° off the outbound, toward the south
@@ -79,9 +68,10 @@ export const PLANS = {
   UBAYA_PARALLEL: parallelPlan,
 }
 
-// The HILPT entry each UBAYA plan flies (for annunciation).
+// What each UBAYA plan flies (for annunciation): from the west it's a straight-in
+// (NoPT); from the east the 430W flies the hold-in-lieu course reversal.
 export const PLAN_ENTRY = {
-  UBAYA_DIRECT: 'DIRECT',
+  UBAYA_DIRECT: 'NoPT',
   UBAYA_TEARDROP: 'TEARDROP',
   UBAYA_PARALLEL: 'PARALLEL',
 }

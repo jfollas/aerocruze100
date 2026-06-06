@@ -99,3 +99,42 @@ describe('SkyView source flies the bugs with no glideslope coupling', () => {
     expect(s.lpvPhase).toBe(null)
   })
 })
+
+describe('GPS course tracking with wind correction', () => {
+  const signed = (a, b) => ((a - b + 540) % 360) - 180
+
+  it('crabs into a crosswind and holds the GPS course (cross-track ~0)', () => {
+    // 40 kt aloft from the north — a crosswind on the eastbound UBAYA->ZIMBO leg
+    let s = loaded('WUDAT', { gpsData: 'ifr', windDir: 360, windSpd: 40 })
+    s = reducer(s, E.knobPress()) // engage
+    s = reducer(s, E.mode()) // TRK -> GPSS
+    s = { ...s, verticalMode: 'ALTHOLD', selAlt: 2300, curAlt: 2300 }
+    const devs = []
+    let crab = 0
+    for (let t = 0; t < 500; t += 0.5) {
+      s = reducer(s, E.tick(0.5))
+      if (s.activeLeg === 2) {
+        devs.push(Math.abs(s.cdiDev || 0))
+        crab = signed(s.curTrack, s.gpsDtk) // heading vs the course (the wind-correction angle)
+      }
+    }
+    const tail = devs.slice(Math.floor(devs.length * 0.6))
+    const steadyDev = tail.reduce((a, b) => a + b, 0) / tail.length
+    expect(steadyDev).toBeLessThan(0.2) // course held to a small fraction of a dot
+    expect(Math.abs(crab)).toBeGreaterThan(8) // visibly crabbed into the wind
+  })
+
+  it('shows a reduced ground speed in a headwind', () => {
+    // wind from ~the final approach course = a headwind; GS drops below the airspeed
+    let s = loaded('WUDAT', { gpsData: 'ifr', windDir: 100, windSpd: 35 })
+    s = reducer(s, E.knobPress())
+    s = reducer(s, E.mode())
+    s = { ...s, verticalMode: 'ALTHOLD', selAlt: 2300, curAlt: 2300 }
+    let gsOnLeg2 = 90
+    for (let t = 0; t < 400; t += 0.5) {
+      s = reducer(s, E.tick(0.5))
+      if (s.activeLeg === 2) gsOnLeg2 = s.curGS
+    }
+    expect(gsOnLeg2).toBeLessThan(80) // headwind slows the groundspeed below the 90 kt airspeed
+  })
+})

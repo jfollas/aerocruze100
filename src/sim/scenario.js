@@ -23,35 +23,51 @@ import {
   FIX_XY,
   TDZE,
   FIELD_ELEV,
-  GLIDE_ANGLE,
   nmBetween,
   bearingToTrue,
   magToTrue,
   trueToMag,
 } from './geo.js'
 import { PLANS, gpssGuidance } from './navplan.js'
+import { windVector, windAt, windCorrectedHeadingTrue } from './wind.js'
 
-const FT_PER_NM = 6076.12
 const GS_DOT_FT = 50 // glideslope deviation: feet of error per dot on the GSI
 const APPROACH_IAS = 90 // kt flown on the approach
 // Bank limit that yields a standard-rate (3°/sec) turn in this model, so GPSS
 // fly-by transitions arc onto the next leg like a Garmin 430.
 const GPSS_BANK = MAX_BANK * (3 / TURN_RATE)
+const FAF_ALT = 2300 // ft MSL, the ZIMBO (FAF) crossing altitude / glidepath intercept
+const FAF_DTHR = nmBetween(FIX_XY.ZIMBO, FIX_XY.RW10) // nm, ZIMBO -> threshold (~4.9)
+const GP_GRADIENT = (FAF_ALT - TDZE) / FAF_DTHR // ft of altitude lost per nm down the final
 const toRad = (d) => (d * Math.PI) / 180
 const clamp = (x, lo, hi) => Math.max(lo, Math.min(hi, x))
 
 // Glidepath altitude (ft MSL) at a slant distance `dThr` (nm) from the runway
-// threshold, for the published 3.04° LPV path.
+// threshold: a constant-gradient path anchored at the runway (TDZE) and the FAF
+// (2300 ft at ZIMBO), so a level aircraft at the 2300 platform intercepts the
+// path right at ZIMBO — not a fraction of a mile before it.
 function glidepathAlt(dThrNm) {
-  return TDZE + dThrNm * FT_PER_NM * Math.tan(toRad(GLIDE_ANGLE))
+  return TDZE + dThrNm * GP_GRADIENT
 }
 
 export function stepScenario(s, dt) {
   if (s.power === 'off' && s.groundSpeed <= 10) return {} // parked & unpowered
   const patch = {}
-  const gs = s.groundSpeed > 10 ? s.groundSpeed : 0
+  const tas = s.groundSpeed > 10 ? s.groundSpeed : 0 // commanded true airspeed
 
-  // ===== Lateral: pick the commanded track =====
+  // Wind at the present altitude (gradient aloft; backed & slower near the
+  // ground). The aircraft's ground vector is its air vector plus the wind.
+  const wind = tas > 0 ? windVector(s.curAlt - FIELD_ELEV, s.windDir, s.windSpd) : { wx: 0, wy: 0 }
+  patch.windNow = windAt(s.curAlt - FIELD_ELEV, s.windDir, s.windSpd)
+
+  // The ground track & speed the GPS sees from the current heading (wind-drifted).
+  const hdg0 = toRad(magToTrue(s.curTrack))
+  const gx0 = tas * Math.sin(hdg0) + wind.wx
+  const gy0 = tas * Math.cos(hdg0) + wind.wy
+  const gsCur = Math.hypot(gx0, gy0)
+  const gtCur = mod360((Math.atan2(gx0, gy0) * 180) / Math.PI)
+
+  // ===== Lateral: pick the commanded GROUND track =====
   const onGpss = s.apEngaged && s.lateralMode === 'GPSS' && s.gpsData === 'ifr'
   const plan = s.scenarioIaf ? PLANS[s.scenarioIaf] : null
   let targetTrack = s.selTrack
@@ -62,13 +78,13 @@ export function stepScenario(s, dt) {
   patch.cdiToFrom = null // TO/FROM flag
   if (onGpss && plan) {
     const legIdx = clamp(s.activeLeg || 1, 1, plan.length - 1)
-    const g = gpssGuidance(plan, legIdx, { x: s.curX, y: s.curY }, gs || APPROACH_IAS, magToTrue(s.curTrack))
+    const g = gpssGuidance(plan, legIdx, { x: s.curX, y: s.curY }, gsCur || APPROACH_IAS, gtCur)
     activeLeg = g.sequence ? Math.min(g.nextLegIdx, plan.length - 1) : legIdx
     targetTrack = trueToMag(g.commandedTrackTrue)
     patch.selTrack = Math.round(mod360(targetTrack)) // reflect the GPS course on the bug
     // course deviation: tighter full-scale on the final approach segment
     const fullScale = legIdx >= plan.length - 1 ? 0.3 : 1.0
-    patch.cdiDev = clamp(-g.xtkNm / fullScale * 3, -3.5, 3.5) // 3 dots = full scale
+    patch.cdiDev = clamp((-g.xtkNm / fullScale) * 3, -3.5, 3.5) // 3 dots = full scale
     patch.cdiScale = fullScale
     patch.cdiToFrom = g.toFrom
   }
@@ -83,10 +99,13 @@ export function stepScenario(s, dt) {
     patch.gpsDtk = null
   }
 
-  // Steer toward the target track (same eased bank/turn law as the AP).
+  // Steer the HEADING. In a tracking mode the desired GROUND track is converted
+  // to the heading that makes it good in the wind (the autopilot crabs); the
+  // disengaged / gyro cases just hold a heading and let the wind drift them.
   if (s.apEngaged && !s.emergencyLevel && !s.gyroMode) {
+    const cmdHdg = trueToMag(windCorrectedHeadingTrue(magToTrue(targetTrack), wind, tas))
     // GPSS flies fly-by turns at standard rate; manual TRK uses the full bank
-    const { bankAngle, curTrack } = lateralStep(s, dt, targetTrack, onGpss ? GPSS_BANK : MAX_BANK)
+    const { bankAngle, curTrack } = lateralStep(s, dt, cmdHdg, onGpss ? GPSS_BANK : MAX_BANK)
     patch.bankAngle = bankAngle
     patch.curTrack = curTrack
   } else if (s.apEngaged && s.emergencyLevel) {
@@ -100,11 +119,15 @@ export function stepScenario(s, dt) {
     patch.curTrack = mod360(s.curTrack + (patch.bankAngle / 10) * dt)
   }
 
-  // ===== Position integration (uses the freshly-computed track) =====
-  const trkTrue = magToTrue(patch.curTrack)
-  const distNm = (gs / 3600) * dt
-  patch.curX = s.curX + distNm * Math.sin(toRad(trkTrue))
-  patch.curY = s.curY + distNm * Math.cos(toRad(trkTrue))
+  // ===== Position integration: air vector (new heading) + wind =====
+  const hdg = toRad(magToTrue(patch.curTrack))
+  const gx = tas * Math.sin(hdg) + wind.wx
+  const gy = tas * Math.cos(hdg) + wind.wy
+  patch.curX = s.curX + (gx / 3600) * dt
+  patch.curY = s.curY + (gy / 3600) * dt
+  patch.curGS = Math.round(Math.hypot(gx, gy)) // actual ground speed (air + wind)
+  // actual ground track (magnetic) — differs from the heading by the crab angle
+  patch.curGT = patch.curGS > 1 ? Math.round(trueToMag(mod360((Math.atan2(gx, gy) * 180) / Math.PI))) : patch.curTrack
   const pos = { x: patch.curX, y: patch.curY }
 
   // ===== Vertical =====
@@ -115,13 +138,16 @@ export function stepScenario(s, dt) {
   let coupled = s.verticalMode === 'GS_CPLD'
   let lpvPhase = null
   if (onApproach) {
-    const onFinal = activeLeg >= plan.length - 1 // sequenced past ZIMBO onto the final
-    const armed = activeLeg >= plan.length - 2 // on the UBAYA -> ZIMBO leg or beyond
+    const armed = activeLeg >= plan.length - 2 // established inbound on the approach course
     // Couple at the FAF when level/descending (not while flying a missed-approach
     // climb, which leaves verticalMode as SVS with a positive selVS).
     const readyToCouple =
       s.verticalMode === 'ALTHOLD' || s.verticalMode === 'SEL' || (s.verticalMode === 'SVS' && s.selVS <= 0)
-    if (!coupled && onFinal && readyToCouple) {
+    // Couple only when the glidepath has actually descended to the aircraft (the
+    // intercept at ZIMBO) — not the instant the final leg sequences, which would
+    // start the descent slightly before the FAF.
+    const captured = gpAlt <= s.curAlt
+    if (!coupled && armed && readyToCouple && captured) {
       coupled = true
       patch.verticalMode = 'GS_CPLD'
     }
@@ -133,7 +159,7 @@ export function stepScenario(s, dt) {
     // Feed-forward the nominal descent rate that keeps us on the moving 3.04°
     // path (so the needle stays centred), plus a proportional term that nulls
     // any residual deviation.
-    const pathRate = -((gs || APPROACH_IAS) * FT_PER_NM / 60) * Math.tan(toRad(GLIDE_ANGLE))
+    const pathRate = -((gsCur || APPROACH_IAS) / 60) * GP_GRADIENT
     targetVS = clamp(pathRate + (gpAlt - s.curAlt) * ALT_CAPTURE_GAIN, -900, 200)
   } else {
     targetVS = userVerticalTargetVS(s) // user manages the altitude (ALT HOLD / SEL / SVS)

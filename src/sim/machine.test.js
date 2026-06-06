@@ -112,7 +112,8 @@ describe('altitude select & sync (§5.1, §5.4.3)', () => {
   })
 
   it('ALT then KNOB (no rotate) holds the current altitude (§5.4.2)', () => {
-    let s = reducer(poweredOn({ curAlt: 5230 }), E.knobPress()) // engage -> SVS
+    // altimeter synced (no AP/PFD offset) so the capture is the actual altitude
+    let s = reducer({ ...poweredOn({ curAlt: 5230 }), altDelta: 0 }, E.knobPress())
     expect(s.apEngaged).toBe(true)
     s = reducer(s, E.alt()) // SEL_ALT, cursor altSel
     s = reducer(s, E.knobPress()) // no rotate -> ALT HOLD
@@ -127,6 +128,18 @@ describe('altitude select & sync (§5.1, §5.4.3)', () => {
     s = reducer(s, E.knobPress())
     expect(s.verticalMode).toBe('SVS')
     expect(s.selVS).toBe(0)
+  })
+
+  it('an un-synced altimeter offsets the captured altitude (PFD reads AP + error)', () => {
+    // AP altimeter reads 200 ft BELOW the actual/PFD altitude (altDelta = -200);
+    // preselect 2300 -> the AP flies its reading down to 2300, so the PFD (actual)
+    // settles at 2300 + 200 = 2500.
+    let s = poweredOn({ curAlt: 4000, curVS: 0 })
+    s = reducer(s, E.knobPress()) // engage
+    s = { ...s, altDelta: -200, verticalMode: 'SEL', selAlt: 2300, selVS: -500 }
+    for (let i = 0; i < 1200 && s.verticalMode === 'SEL'; i++) s = reducer(s, E.tick(0.5))
+    expect(s.verticalMode).toBe('ALTHOLD')
+    expect(Math.round(s.curAlt)).toBe(2500) // PFD/actual = selAlt - altDelta
   })
 })
 

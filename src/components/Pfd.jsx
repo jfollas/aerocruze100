@@ -264,8 +264,20 @@ export default function Pfd({ state, actions }) {
         <g pointerEvents="none">
           <rect x={SPD_X} y={BOT + 4} width={SPD_W} height={17} rx="2" className="pfd-gs-badge" />
           <text x={SPD_X + 4} y={BOT + 16} className="pfd-gs-lbl" textAnchor="start">GS</text>
-          <text x={SPD_X + SPD_W - 4} y={BOT + 16} className="pfd-gs-val" textAnchor="end">{Math.round(state.groundSpeed)}</text>
+          <text x={SPD_X + SPD_W - 4} y={BOT + 16} className="pfd-gs-val" textAnchor="end">{Math.round(state.curGS ?? state.groundSpeed)}</text>
         </g>
+        {/* wind indicator (lower-left): the arrow points the way the wind blows
+            relative to the heading-up display; text gives the wind at altitude */}
+        {state.windNow?.speed > 0 && (
+          <g pointerEvents="none">
+            <g transform={`rotate(${mod360(state.windNow.fromMag + 180 - curTrack)} 22 248)`}>
+              <line x1="22" y1="256" x2="22" y2="241" className="pfd-wind-arrow" />
+              <polygon points="22,238 18,245 26,245" className="pfd-wind-head" />
+            </g>
+            <text x="36" y="245" className="pfd-wind-txt">{String(Math.round(state.windNow.fromMag)).padStart(3, '0')}°</text>
+            <text x="36" y="256" className="pfd-wind-txt">{Math.round(state.windNow.speed)} kt</text>
+          </g>
+        )}
 
         {/* ===== Altitude tape ===== drag the tape to set the initial altitude;
             drag the bug to set the altitude target */}
@@ -341,6 +353,14 @@ export default function Pfd({ state, actions }) {
             {/* heading bug — rides just inside the ring, outer edge tangent to it */}
             <g transform={`rotate(${svHeadingBug} ${HSI_CX} ${HSI_CY})`}>
               <path d={ringBug(HSI_CX, HSI_CY - HSI_R, 16, 10, 5)} className="pfd-bug" />
+            </g>
+            {/* ground-track diamond — magenta, centred on the outer ring (half in,
+                half out); its offset from the top (heading) is the wind crab */}
+            <g transform={`rotate(${state.curGT ?? curTrack} ${HSI_CX} ${HSI_CY})`}>
+              <path
+                d={`M${HSI_CX} ${HSI_CY - HSI_R - 7} L${HSI_CX + 5} ${HSI_CY - HSI_R} L${HSI_CX} ${HSI_CY - HSI_R + 7} L${HSI_CX - 5} ${HSI_CY - HSI_R} Z`}
+                className="pfd-track-diamond"
+              />
             </g>
             {/* course / CDI needle: a fixed course pointer (along the active GPS
                 leg / DTK, or the heading bug for other sources) plus a middle

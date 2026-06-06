@@ -70,6 +70,27 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* ground-track diamond on the HSI ring */
+.pfd-track-diamond {
+  fill: #e641d6;
+  stroke: #0c0f14;
+  stroke-width: 0.6;
+}
+
+/* wind indicator */
+.pfd-wind-arrow {
+  stroke: #5fd0ff;
+  stroke-width: 2;
+}
+.pfd-wind-head {
+  fill: #5fd0ff;
+}
+.pfd-wind-txt {
+  fill: #bfe6ff;
+  font: 700 8px/1 'Segoe UI', system-ui, sans-serif;
+  font-variant-numeric: tabular-nums;
+}
+
 /* cyan bugs */
 .pfd-bug {
   fill: #19d2e6;

@@ -29,10 +29,16 @@ describe('HILPT entry (matches the FAA right-turn hold, holding side south)', ()
   it('east + north (non-holding side) -> parallel', () => {
     expect(holdEntry(e(45, 5))).toBe('PARALLEL') // northeast
   })
-  it('each UBAYA plan starts in its named entry sector', () => {
-    for (const k of Object.keys(PLAN_ENTRY)) {
-      expect(holdEntry(PLANS[k][0])).toBe(PLAN_ENTRY[k])
+  it('each UBAYA plan starts in its entry sector', () => {
+    const sector = { UBAYA_DIRECT: 'DIRECT', UBAYA_TEARDROP: 'TEARDROP', UBAYA_PARALLEL: 'PARALLEL' }
+    for (const k of Object.keys(sector)) {
+      expect(holdEntry(PLANS[k][0])).toBe(sector[k])
     }
+  })
+
+  it('the direct (west) arrival flies straight in — no hold lap', () => {
+    expect(PLANS.UBAYA_DIRECT.map((w) => w.name)).toEqual(['START', 'UBAYA', 'ZIMBO', 'RW10'])
+    expect(PLAN_ENTRY.UBAYA_DIRECT).toBe('NoPT')
   })
 })
 

@@ -19,9 +19,10 @@ const round = (x, step) => Math.round(x / step) * step
 export const STARTUP_BARO_DELTA = 200 // mismatch present at power-up (startup checklist)
 const PREAPP_BARO_DELTA = 150 // re-introduced when arming GPSS for an approach (pre-procedure check)
 
-// True when the connected EFIS auto-syncs the autopilot's baro/altitude.
+// True when the connected EFIS feeds the autopilot a digital altitude, keeping
+// it auto-synced (no baro mismatch): Aspen/G5 over ARINC, or the SkyView source.
 export function baroAutoSync(s) {
-  return s.arinc === 'aspen' || s.arinc === 'g5'
+  return s.arinc === 'aspen' || s.arinc === 'g5' || s.skyview === 'on'
 }
 
 export const initialState = {
@@ -56,7 +57,12 @@ export const initialState = {
   curIAS: 0, // indicated airspeed (kt) — drives the PFD speed tape
   pitch: 0, // pitch attitude (deg, + nose up) — drives the PFD horizon
   bankAngle: 0,
-  groundSpeed: 0,
+  groundSpeed: 0, // commanded true airspeed (kt); ground speed is derived from it + wind
+  curGS: 0, // actual ground speed (kt) = airspeed +/- wind
+  curGT: 0, // actual ground track (°mag) — heading drifted by the wind
+  windDir: 270, // gradient (aloft) wind FROM direction, °magnetic
+  windSpd: 0, // gradient (aloft) wind speed, kt (0-45); backs & slows toward the surface
+  windNow: { fromMag: 270, speed: 0 }, // wind at the current altitude (derived each tick)
 
   // config (set via SET_CONFIG)
   gpsStatus: 'OK', // NOGPS | NOFIX | OK
@@ -200,6 +206,8 @@ function keepConfig(s) {
     gpsData: s.gpsData,
     arinc: s.arinc,
     groundSpeed: s.groundSpeed,
+    windDir: s.windDir,
+    windSpd: s.windSpd,
     approachActive: s.approachActive,
     glideslopeFlagged: s.glideslopeFlagged,
     // the aircraft (PFD) state persists across an autopilot power cycle
@@ -406,7 +414,8 @@ function onKnobPress(s) {
         // current altitude into ALT HOLD (nearest 100 ft). Rotating first puts
         // the cursor on SEL VS to set up a climb/descent instead (§5.4.3).
         if (!s.altTouched) {
-          return { ...s, screen: 'NORMAL', verticalMode: 'ALTHOLD', selAlt: round(s.curAlt, 100), curVS: 0, cursor: 'track' }
+          // capture the autopilot's current altimeter reading (curAlt + altDelta)
+          return { ...s, screen: 'NORMAL', verticalMode: 'ALTHOLD', selAlt: round(s.curAlt + s.altDelta, 100), curVS: 0, cursor: 'track' }
         }
         return { ...s, cursor: 'vs' }
       }
@@ -431,15 +440,17 @@ function nextCursor(s) {
 }
 
 function confirmAltSelect(s) {
+  // Comparisons are against the autopilot's altimeter reading (curAlt + altDelta).
+  const apAlt = s.curAlt + s.altDelta
   // If the selected altitude is essentially the current altitude, go straight to
   // ALT HOLD; otherwise start the transition in SEL mode (§5.4.3).
-  if (Math.abs(s.selAlt - s.curAlt) < 50) {
+  if (Math.abs(s.selAlt - apAlt) < 50) {
     return { ...s, screen: 'NORMAL', verticalMode: 'ALTHOLD', cursor: 'track' }
   }
   // SEL VS direction always follows the altitude change (descend = down); the
   // magnitude is the entered rate, or 500 fpm if too shallow / unset (§5.4.4).
   const mag = Math.abs(s.selVS) >= 400 ? Math.abs(round(s.selVS, 100)) : 500
-  const synced = (s.selAlt < s.curAlt ? -1 : 1) * mag
+  const synced = (s.selAlt < apAlt ? -1 : 1) * mag
   return { ...s, screen: 'NORMAL', verticalMode: 'SEL', selVS: synced, cursor: 'track' }
 }
 
@@ -454,12 +465,12 @@ function engage(s) {
   const lateral = lateralCycle(s).includes(s.lateralMode) ? s.lateralMode : 'TRK'
   let verticalMode = 'SVS'
   let selVS = round(s.curVS, 100)
-  if (s.preselectArmed && Math.abs(s.selAlt - s.curAlt) >= 50) {
+  if (s.preselectArmed && Math.abs(s.selAlt - (s.curAlt + s.altDelta)) >= 50) {
     verticalMode = 'SEL'
     // §5.4.4: sync to the current VS, defaulting to 500 fpm, but always in the
-    // direction of the selected altitude (descend = down).
+    // direction of the selected altitude (descend = down) per the AP's altimeter.
     const mag = Math.abs(s.curVS) >= 400 ? Math.abs(round(s.curVS, 100)) : 500
-    selVS = (s.selAlt < s.curAlt ? -1 : 1) * mag
+    selVS = (s.selAlt < s.curAlt + s.altDelta ? -1 : 1) * mag
   }
   return {
     ...s,
@@ -569,9 +580,11 @@ function onTick(s, dt) {
     }
   }
 
-  // Altitude capture: SEL transition reaching target -> ALT HOLD (§5.4.3, §9)
-  if (next.apEngaged && next.verticalMode === 'SEL' && Math.abs(next.selAlt - next.curAlt) < 30) {
-    next = { ...next, verticalMode: 'ALTHOLD', curVS: 0, curAlt: next.selAlt }
+  // Altitude capture: SEL transition reaching target -> ALT HOLD (§5.4.3, §9).
+  // The AP captures when ITS altimeter (curAlt + altDelta) reaches selAlt, so the
+  // actual/PFD altitude settles at selAlt - altDelta (offset until ALT SYNC'd).
+  if (next.apEngaged && next.verticalMode === 'SEL' && Math.abs(next.selAlt - (next.curAlt + next.altDelta)) < 30) {
+    next = { ...next, verticalMode: 'ALTHOLD', curVS: 0, curAlt: next.selAlt - next.altDelta }
   }
 
   // Vertical approach sequencing (§5.4.5). In the scenario, coupling is driven

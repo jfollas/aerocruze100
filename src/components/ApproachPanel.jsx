@@ -6,7 +6,7 @@ import '../styles/approach.css'
 const IAFS = [
   { id: 'LEYIR', text: 'LEYIR (N)' },
   { id: 'WUDAT', text: 'WUDAT (S)' },
-  { id: 'UBAYA_DIRECT', text: 'UBAYA·direct (W)' },
+  { id: 'UBAYA_DIRECT', text: 'UBAYA·straight-in (W)' },
   { id: 'UBAYA_TEARDROP', text: 'UBAYA·teardrop (SE)' },
   { id: 'UBAYA_PARALLEL', text: 'UBAYA·parallel (NE)' },
 ]
@@ -76,9 +76,10 @@ export default function ApproachPanel({ state, actions }) {
               to get a feel for the bugs.
             </p>
             <p>
-              Pick a start fix: <b>LEYIR</b> / <b>WUDAT</b> are the straight-in T-bar arms; <b>UBAYA</b> flies the
-              hold-in-lieu procedure turn — the 430W picks the entry (direct from the west, teardrop from the SE,
-              parallel from the NE).
+              Pick a start fix: <b>LEYIR</b> / <b>WUDAT</b> are the straight-in T-bar arms. At <b>UBAYA</b>, arriving
+              from the <b>west</b> you're already on the final course, so it's a straight-in (<b>NoPT</b>); arriving
+              from the <b>east</b> the 430W flies the hold-in-lieu procedure turn — a <b>teardrop</b> from the SE or a
+              <b>parallel</b> entry from the NE.
             </p>
           </div>
         </div>
@@ -95,10 +96,20 @@ export default function ApproachPanel({ state, actions }) {
         <div className="apch-side">
           <div className="apch-status">
             <span><b>IAF</b> {active ? iafLabel(state.scenarioIaf) : '—'}</span>
-            {state.hilptEntry && <span><b>HILPT</b> {state.hilptEntry}</span>}
+            {state.hilptEntry &&
+              (state.hilptEntry === 'NoPT' ? (
+                <span><b>NoPT</b> straight-in</span>
+              ) : (
+                <span><b>HILPT</b> {state.hilptEntry}</span>
+              ))}
             <span><b>Alt</b> {active ? Math.round(state.curAlt) + '′' : '—'}</span>
             <span><b>AGL</b> {active && state.agl != null ? Math.round(state.agl) + '′' : '—'}</span>
             <span><b>Vert</b> {active ? vmLabel : '—'}</span>
+            {state.windSpd > 0 && (
+              <span>
+                <b>Wind</b> {String(Math.round(state.windNow?.fromMag ?? state.windDir)).padStart(3, '0')}°/{Math.round(state.windNow?.speed ?? 0)}
+              </span>
+            )}
           </div>
           <div className="apch-legend">
             <span><svg viewBox="0 0 18 18" className="apch-legend-ico"><path d="M9 2 L11 8 L16 11 L11 11 L9 16 L7 11 L2 11 L7 8 Z" /></svg> aircraft on the plan view &amp; profile</span>

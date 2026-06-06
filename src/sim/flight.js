@@ -2,6 +2,9 @@
 // returns a partial patch of the *actual* aircraft values (curTrack, curAlt, curVS,
 // bankAngle). Selected/target values are user-driven and never changed here.
 
+import { magToTrue, trueToMag, FIELD_ELEV } from './geo.js'
+import { windVector, windAt } from './wind.js'
+
 export const TURN_RATE = 6 // deg/sec of heading change at full bank
 export const MAX_BANK = 25 // deg, the autopilot's commanded bank limit
 export const ROLL_RESPONSE = 1.5 // how quickly bank settles toward its target (1/sec)
@@ -64,7 +67,9 @@ export function perfStep(s, dt, newVS, targetIAS) {
 export function userVerticalTargetVS(s) {
   if (!s.apEngaged) return s.curVS
   if (s.verticalMode === 'SEL') {
-    const altErr = s.selAlt - s.curAlt
+    // the AP flies to selAlt on ITS altimeter (curAlt + altDelta); when its
+    // reading reaches selAlt the actual/PFD altitude is offset by altDelta
+    const altErr = s.selAlt - (s.curAlt + s.altDelta)
     const cap = Math.abs(s.selVS || 500)
     return Math.max(-cap, Math.min(cap, altErr * ALT_CAPTURE_GAIN))
   }
@@ -154,6 +159,16 @@ export function stepFlight(s, dt) {
   const { curIAS, pitch } = perfStep(s, dt, newVS, targetIAS)
   patch.curIAS = curIAS
   patch.pitch = pitch
+
+  // ---- Ground speed & wind readout (airspeed +/- the wind along the heading) ----
+  const tas = Math.max(0, s.groundSpeed)
+  const wind = tas > 0 ? windVector(s.curAlt - FIELD_ELEV, s.windDir, s.windSpd) : { wx: 0, wy: 0 }
+  const hdgr = (magToTrue(patch.curTrack) * Math.PI) / 180
+  const gx = tas * Math.sin(hdgr) + wind.wx
+  const gy = tas * Math.cos(hdgr) + wind.wy
+  patch.curGS = Math.round(Math.hypot(gx, gy))
+  patch.curGT = patch.curGS > 1 ? Math.round(trueToMag(mod360((Math.atan2(gx, gy) * 180) / Math.PI))) : patch.curTrack
+  patch.windNow = windAt(s.curAlt - FIELD_ELEV, s.windDir, s.windSpd)
 
   return patch
 }
