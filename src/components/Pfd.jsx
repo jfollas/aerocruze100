@@ -464,7 +464,7 @@ export default function Pfd({ state, actions }) {
 
       <div className="pfd-controls">
         <div className="pfd-chips">
-          <button className="pfd-chip pfd-chip-hdg" onClick={cycleCdi} title="Cycle CDI source">
+          <button className="pfd-chip pfd-chip-hdg" data-ctl="cdiSource" onClick={cycleCdi} title="Cycle CDI source">
             <span className="pfd-chip-lbl">CDI</span>
             <span className="pfd-chip-val" style={{ color: cdiSrcColor }}>{cdiLabel}</span>
           </button>
@@ -474,6 +474,7 @@ export default function Pfd({ state, actions }) {
           </div>
           <button
             className={'pfd-chip pfd-chip-btn' + (svAltBugSet ? ' on' : '')}
+            data-ctl="altBug"
             onClick={() => set({ svAltBugSet: !svAltBugSet })}
             title="Toggle the altitude bug"
           >

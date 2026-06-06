@@ -88,6 +88,7 @@ export default function SkyviewKnobs({ state, actions }) {
           <button
             key={k.id}
             className={'skv-knob skv-' + k.id}
+            data-ctl={k.id === 'hdg' ? 'svHdgKnob' : 'svAltKnob'}
             style={{ left: `calc(${k.cx}% + ${k.dx || 0}px)`, top: `calc(${k.cy}% + 6px)` }}
             title={k.id === 'hdg' ? 'HDG/TRK — turn or scroll to set the heading bug, click to sync' : 'ALT — turn or scroll to set the altitude bug, click to sync'}
             aria-label={k.id === 'hdg' ? 'Heading bug knob' : 'Altitude bug knob'}

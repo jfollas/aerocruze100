@@ -25,9 +25,9 @@ function navSourceOf(s) {
 }
 
 // A segmented control bound to one config field.
-function Seg({ label, value, options, onChange }) {
+function Seg({ label, value, options, onChange, ctl }) {
   return (
-    <div className="cfg-row">
+    <div className="cfg-row" data-ctl={ctl}>
       <span className="cfg-label">{label}</span>
       <div className="cfg-seg">
         {options.map((o) => (
@@ -66,6 +66,7 @@ export default function ConfigPanel({ state, actions }) {
         <div className="cfg-tab-body">
           <Seg
             label="Source"
+            ctl="navSource"
             value={navSourceOf(state)}
             options={[
               { value: 'gns430w', text: '430W' },
@@ -80,6 +81,7 @@ export default function ConfigPanel({ state, actions }) {
           {state.gpsData === 'ifr' && (
             <Seg
               label="LPV approach"
+              ctl="lpvToggle"
               value={state.approachActive ? 'yes' : 'no'}
               options={[
                 { value: 'no', text: 'Off' },
@@ -95,6 +97,7 @@ export default function ConfigPanel({ state, actions }) {
         <div className="cfg-tab-body">
           <Seg
             label="GPS signal"
+            ctl="gpsSignal"
             value={state.gpsStatus}
             options={[
               { value: 'NOGPS', text: 'None' },
@@ -124,7 +127,7 @@ export default function ConfigPanel({ state, actions }) {
             />
             <span className="cfg-val">{String(state.windDir).padStart(3, '0')}°</span>
           </div>
-          <div className="cfg-row">
+          <div className="cfg-row" data-ctl="windSlider">
             <span className="cfg-label">Wind speed (aloft)</span>
             <input
               type="range"
@@ -155,7 +158,7 @@ export default function ConfigPanel({ state, actions }) {
             ]}
             onChange={(p) => set({ warning: p === 'min' ? 'MIN_AS' : p === 'max' ? 'MAX_AS' : null })}
           />
-          <div className="cfg-row">
+          <div className="cfg-row" data-ctl="bankSlider">
             <span className="cfg-label">Bank (AEP)</span>
             <input
               type="range"
@@ -170,7 +173,7 @@ export default function ConfigPanel({ state, actions }) {
           <div className="cfg-row">
             <span className="cfg-label">Sensor</span>
             <div className="cfg-seg">
-              <button className="cfg-opt" disabled={!on || state.warning === 'SENSOR'} onClick={() => set({ warning: 'SENSOR' })}>
+              <button className="cfg-opt" data-ctl="sensorBtn" disabled={!on || state.warning === 'SENSOR'} onClick={() => set({ warning: 'SENSOR' })}>
                 Trigger error
               </button>
               <button className="cfg-opt" disabled={!on} onClick={() => set({ power: 'off' })}>

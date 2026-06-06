@@ -1,0 +1,413 @@
+// Guided walkthrough lessons. Pure data + predicates over the reducer state —
+// no React, no DOM — so they're importable and unit-testable. The tutorial UI
+// (src/hooks/useTutorial.js, src/components/TutorialPanel.jsx) interprets these.
+//
+// A lesson: { id, title, blurb, init(actions), steps:[Step] }
+// A Step:  {
+//   id, prompt, highlight,          // highlight = a CONTROL_IDS member (or null)
+//   check(state) -> bool,           // completion predicate (omit => a "notice" step, Next only)
+//   setup(actions)?,                // run once on entering the step (arm a condition)
+//   pause?,                         // freeze the sim clock while waiting (default true)
+//   allowPreSatisfied?,             // advance even if check is already true on entry (observe steps)
+//   note?,                          // teaching aside shown under the prompt
+// }
+//
+// init/setup receive the memoized `actions` object (setConfig / button presses);
+// they cannot reach into the reducer. Lessons never fake autopilot events — the
+// user drives the real controls and the sim stays authoritative.
+
+import { angleDiff } from './flight.js'
+
+// The set of control ids a step may highlight (kept in sync with the data-ctl
+// attributes on the components and the glow rules in styles/tutorial.css).
+export const CONTROL_IDS = [
+  'mode',
+  'alt',
+  'knob',
+  'pwr',
+  'cws',
+  'level',
+  'navSource',
+  'lpvToggle',
+  'gpsSignal',
+  'windSlider',
+  'bankSlider',
+  'sensorBtn',
+  'cdiSource',
+  'altBug',
+  'svHdgKnob',
+  'svAltKnob',
+  'iaf',
+]
+
+// nav-source config patches (mirror ConfigPanel.NAV_SOURCES)
+const NAV_NONE = { gpsData: 'none', arinc: 'none', skyview: 'off' }
+const NAV_430W = { gpsData: 'ifr', arinc: 'none', skyview: 'off' }
+
+// Reset to a clean, powered-DOWN baseline with the lesson's config applied. The
+// caller decides whether to power on (the startup lesson leaves it off so the
+// user flips PWR; the others power on and boot during their first step). On boot
+// the autopilot comes alive with the usual ~200 ft baro offset to sync.
+function reset(actions, cfg = {}) {
+  actions.setConfig({ power: 'off' })
+  actions.setConfig({
+    gpsStatus: 'OK',
+    groundSpeed: 120,
+    curTrack: 200,
+    curAlt: 3000,
+    curVS: 0,
+    scenarioActive: false,
+    approachActive: false,
+    windDir: 270,
+    windSpd: 0,
+    skyviewCdi: 'heading',
+    svHeadingBug: 160,
+    svAltBug: 3500,
+    svAltBugSet: true,
+    svVsBug: 500,
+    inducedBank: 0,
+    warning: null,
+    ...NAV_NONE,
+    ...cfg,
+  })
+}
+
+// shared step fragments -----------------------------------------------------
+const bootStep = {
+  id: 'boot',
+  prompt: 'Powering up the autopilot — wait for it to finish booting.',
+  highlight: null,
+  pause: false, // the clock must run to finish the 3-second boot
+  check: (s) => s.power === 'on',
+}
+
+const synced = (s) => Math.abs(s.altDelta) < 10
+
+// ALT SYNC (two steps): open the screen, then dial the offset to zero.
+const altSyncSteps = (note) => [
+  {
+    id: 'altsync-open',
+    prompt: 'Press ALT twice to reach the ALT SYNC screen.',
+    note,
+    highlight: 'alt',
+    check: (s) => s.screen === 'ALT_SYNC',
+  },
+  {
+    id: 'altsync-dial',
+    prompt: 'Twist the knob until the reported altitude matches the PFD (offset ~0), then press the knob to confirm.',
+    highlight: 'knob',
+    check: (s) => synced(s) && s.screen === 'NORMAL',
+  },
+]
+
+// LESSONS -------------------------------------------------------------------
+
+const startup = {
+  id: 'startup',
+  title: 'Startup & basic modes',
+  blurb: 'Power up, sync the altimeter, engage, then fly a heading and altitudes.',
+  init: (a) => reset(a, { ...NAV_NONE, groundSpeed: 120, curAlt: 3000 }), // stays off — the user powers on
+  steps: [
+    {
+      id: 'power-on',
+      prompt: 'Flip the PWR switch up to power the autopilot on.',
+      highlight: 'pwr',
+      check: (s) => s.power !== 'off',
+    },
+    bootStep,
+    ...altSyncSteps('The autopilot reads its own pressure altitude, which comes up ~200 ft off the PFD. Sync it on the startup check.'),
+    {
+      id: 'engage',
+      prompt: 'Press the knob to engage the autopilot.',
+      highlight: 'knob',
+      check: (s) => s.apEngaged,
+    },
+    {
+      id: 'set-heading',
+      prompt: 'Twist the knob to set a new heading (turn it at least a few clicks).',
+      note: 'Engaged in TRK, the knob selects the track to fly.',
+      highlight: 'knob',
+      check: (s) => s.lateralMode === 'TRK' && Math.abs(angleDiff(200, s.selTrack)) >= 15,
+    },
+    {
+      id: 'watch-turn',
+      prompt: 'Watch the autopilot bank and roll out on the new heading.',
+      highlight: null,
+      pause: false,
+      allowPreSatisfied: true,
+      check: (s) => Math.abs(angleDiff(s.curTrack, s.selTrack)) < 3,
+    },
+    {
+      id: 'alt-hold',
+      prompt: 'Press ALT, then press the knob WITHOUT turning it to hold the current altitude.',
+      note: 'ALT then KNOB (no turn) captures the current altitude into ALT HOLD (§5.4.2).',
+      highlight: 'alt',
+      check: (s) => s.verticalMode === 'ALTHOLD',
+    },
+    {
+      id: 'sel-alt',
+      prompt: 'Now select a new altitude: press ALT, twist to the target, press the knob to move to SEL VS, set a climb/descent rate, then press to confirm.',
+      highlight: 'alt',
+      check: (s) => s.verticalMode === 'SEL',
+    },
+    {
+      id: 'watch-capture',
+      prompt: 'Watch the autopilot fly to the selected altitude and capture it (back to ALT HOLD).',
+      highlight: null,
+      pause: false,
+      check: (s) => s.verticalMode === 'ALTHOLD',
+    },
+  ],
+}
+
+const coupledApproach = {
+  id: 'approach',
+  title: 'Coupled GPS approach (430W)',
+  blurb: 'Fly the RNAV (GPS) RWY 10 fully coupled, then go missed at the MAP.',
+  init: (a) => {
+    reset(a, { ...NAV_NONE, groundSpeed: 90, curAlt: 3000 })
+    a.setConfig({ power: 'on' })
+  },
+  steps: [
+    bootStep,
+    {
+      id: 'src-430w',
+      prompt: 'Select 430W as the nav source.',
+      note: 'A WAAS IFR GPS gives GPSS roll steering and the coupled LPV glidepath.',
+      highlight: 'navSource',
+      check: (s) => s.gpsData === 'ifr' && s.skyview === 'off',
+    },
+    ...altSyncSteps('Pre-flight altimeter check — dial the autopilot offset to zero.'),
+    {
+      id: 'arm-approach',
+      prompt: 'Arm the approach: set LPV approach to Active.',
+      highlight: 'lpvToggle',
+      check: (s) => s.approachActive === true,
+    },
+    {
+      id: 'start-iaf',
+      prompt: 'Pick an initial fix to begin — try WUDAT (the south T-bar arm).',
+      highlight: 'iaf',
+      check: (s) => s.scenarioActive === true,
+    },
+    {
+      id: 'engage',
+      prompt: 'Press the knob to engage the autopilot.',
+      highlight: 'knob',
+      check: (s) => s.apEngaged,
+    },
+    {
+      id: 'gpss',
+      prompt: 'Press MODE to cycle from TRK to GPSS so the GPS flies the plan.',
+      highlight: 'mode',
+      check: (s) => s.lateralMode === 'GPSS',
+    },
+    {
+      id: 'resync',
+      prompt: 'Arming GPSS re-introduced a baro mismatch — ALT SYNC again as a pre-procedure check. Press ALT twice, dial the offset to ~0, press to confirm.',
+      note: 'Real habit: verify the altimeter before every approach.',
+      highlight: 'alt',
+      check: (s) => synced(s) && s.screen === 'NORMAL',
+    },
+    {
+      id: 'platform',
+      prompt: 'Descend to the 2300 ft platform: press ALT, set 2300, add a descent rate (~700 fpm down), and confirm.',
+      highlight: 'alt',
+      check: (s) => s.verticalMode === 'SEL' && s.selAlt <= 2400,
+    },
+    {
+      id: 'level-platform',
+      prompt: 'Let it descend and level at 2300 while GPSS flies you toward ZIMBO.',
+      highlight: null,
+      pause: false,
+      check: (s) => s.verticalMode === 'ALTHOLD' && s.curAlt < 2500,
+    },
+    {
+      id: 'couple',
+      prompt: 'At ZIMBO the LPV glideslope couples automatically — watch it start down.',
+      note: 'GS ARM → GS CPLD as the glidepath descends to meet you at the FAF.',
+      highlight: null,
+      pause: false,
+      check: (s) => s.verticalMode === 'GS_CPLD',
+    },
+    {
+      id: 'to-mins',
+      prompt: 'Ride the glidepath down. The autopilot is not authorized below 700 ft AGL.',
+      highlight: null,
+      pause: false,
+      check: (s) => s.agl != null && s.agl <= 700,
+    },
+    {
+      id: 'go-missed',
+      prompt: 'Going missed: press ALT to break off the glideslope and climb (the autopilot stays in GPSS).',
+      note: 'A momentary ALT press in GS CPLD starts a 500 fpm missed-approach climb (§5.4.6).',
+      highlight: 'alt',
+      check: (s) => s.verticalMode === 'SVS' && s.selVS > 0,
+    },
+    {
+      id: 'climb-out',
+      prompt: 'Watch the missed-approach climb away from the runway.',
+      highlight: null,
+      pause: false,
+      check: (s) => s.agl != null && s.agl > 1000,
+    },
+  ],
+}
+
+const skyview = {
+  id: 'skyview',
+  title: 'SkyView & nav variations',
+  blurb: 'Fly the SkyView bugs, an LNAV stepdown, a hold-in-lieu turn, and a crosswind.',
+  init: (a) => {
+    reset(a, { ...NAV_NONE, groundSpeed: 90, curAlt: 3000 })
+    a.setConfig({ power: 'on' })
+  },
+  steps: [
+    bootStep,
+    {
+      id: 'src-skyview',
+      prompt: 'Select SkyView as the nav source.',
+      note: 'The autopilot follows the SkyView bugs; with a flight plan on the CDI it also flies the lateral GPS course.',
+      highlight: 'navSource',
+      check: (s) => s.skyview === 'on',
+    },
+    ...altSyncSteps('The SkyView cannot auto-sync the altimeter (unlike Aspen/G5), so sync it manually.'),
+    {
+      id: 'hdg-bug',
+      prompt: 'Set the heading bug: turn the SkyView HDG/TRK knob (or drag the HSI).',
+      highlight: 'svHdgKnob',
+      check: (s) => Math.abs(angleDiff(160, s.svHeadingBug)) >= 15,
+    },
+    {
+      id: 'alt-bug',
+      prompt: 'Set the altitude bug: turn the SkyView ALT knob (or drag the alt tape).',
+      highlight: 'svAltKnob',
+      check: (s) => Math.abs(s.svAltBug - 3500) >= 100,
+    },
+    {
+      id: 'engage',
+      prompt: 'Press the knob to engage — it enters SkyView mode and flies the bugs.',
+      highlight: 'knob',
+      check: (s) => s.apEngaged && s.lateralMode === 'SKYVIEW',
+    },
+    {
+      id: 'cdi-gps',
+      prompt: 'Set the PFD CDI source to GPS so the autopilot flies the lateral flight plan.',
+      note: 'Through the SkyView you get the lateral course only — no coupled glideslope.',
+      highlight: 'cdiSource',
+      check: (s) => s.skyviewCdi === 'flightplan',
+    },
+    {
+      id: 'ubaya',
+      prompt: 'Start at UBAYA·teardrop (NE) — the 430W flies the hold-in-lieu procedure turn to reverse onto the final.',
+      highlight: 'iaf',
+      check: (s) => s.scenarioActive && s.hilptEntry === 'TEARDROP',
+    },
+    {
+      id: 'stepdown',
+      prompt: 'No glideslope here — step down by lowering the SkyView ALT bug toward each crossing altitude.',
+      highlight: 'svAltKnob',
+      pause: false,
+      check: (s) => s.svAltBug <= 2400,
+    },
+    {
+      id: 'wind',
+      prompt: 'Add a crosswind: drag the Wind speed slider up above ~10 kt.',
+      highlight: 'windSlider',
+      check: (s) => s.windSpd > 10,
+    },
+    {
+      id: 'crab',
+      prompt: 'Watch the autopilot crab into the wind — the magenta ground-track diamond offsets from the nose while the course stays centered.',
+      highlight: null,
+      pause: false,
+      check: (s) => Math.abs(angleDiff(s.curGT, s.curTrack)) >= 5,
+    },
+  ],
+}
+
+const emergencies = {
+  id: 'emergencies',
+  title: 'Emergencies & safety',
+  blurb: 'Emergency LEVEL, CWS, AEP, a sensor failure, and the altimeter-sync gotcha.',
+  init: (a) => {
+    reset(a, { ...NAV_430W, groundSpeed: 120, curAlt: 3000 })
+    a.setConfig({ power: 'on' })
+  },
+  steps: [
+    bootStep,
+    {
+      id: 'induce-bank',
+      prompt: "You're disengaged in a developing bank. Watch the wings drop.",
+      highlight: null,
+      pause: false,
+      setup: (a) => a.setConfig({ inducedBank: 25 }),
+      allowPreSatisfied: true,
+      check: (s) => Math.abs(s.bankAngle) > 15,
+    },
+    {
+      id: 'level',
+      prompt: 'Press LEVEL — the autopilot engages and rolls wings-level, zero VS.',
+      highlight: 'level',
+      check: (s) => s.emergencyLevel === true,
+    },
+    {
+      id: 'level-revert',
+      prompt: 'Emergency level recovers, then reverts to TRK after a few seconds.',
+      highlight: null,
+      pause: false,
+      setup: (a) => a.setConfig({ inducedBank: 0 }),
+      check: (s) => !s.emergencyLevel && s.lateralMode === 'TRK' && s.apEngaged,
+    },
+    {
+      id: 'cws',
+      prompt: 'Hold the CWS button to hand-fly (CWS AP), then release to resume on the new attitude.',
+      note: 'A quick TAP of CWS instead disconnects the autopilot.',
+      highlight: 'cws',
+      pause: false,
+      check: (s) => s.cwsHeld === true,
+    },
+    {
+      id: 'disengage',
+      prompt: 'Disengage the autopilot: press and HOLD the knob.',
+      highlight: 'knob',
+      check: (s) => !s.apEngaged,
+    },
+    {
+      id: 'aep-active',
+      prompt: 'AEP stays armed (STBY) while the autopilot is off. Drag the Bank slider past 40° — AEP trips to ACTIVE and levels you.',
+      note: 'Automatic Emergency Protection: an upset-recovery backstop when the AP is disengaged.',
+      highlight: 'bankSlider',
+      pause: false,
+      setup: (a) => a.setConfig({ aep: 'stby', inducedBank: 50 }),
+      check: (s) => s.aep === 'active',
+    },
+    {
+      id: 'sensor',
+      prompt: 'Trigger a sensor error (Induce conditions → Sensor). The autopilot disconnects and latches a warning.',
+      highlight: 'sensorBtn',
+      setup: (a) => a.setConfig({ inducedBank: 0 }),
+      check: (s) => s.warning === 'SENSOR' && !s.apEngaged,
+    },
+    {
+      id: 'power-cycle',
+      prompt: 'The sensor latch only clears on a power cycle — flip PWR off, then on.',
+      highlight: 'pwr',
+      check: (s) => s.warning === null && s.power !== 'off',
+    },
+    bootStep,
+    {
+      id: 'gotcha',
+      prompt: 'After the cycle the baro mismatch is back. ALT SYNC again before flying: press ALT twice, dial to ~0.',
+      note: 'The altimeter offset returns on every power-up (unless an Aspen/G5 auto-syncs it).',
+      highlight: 'alt',
+      check: synced,
+    },
+  ],
+}
+
+export const LESSONS = [startup, coupledApproach, skyview, emergencies]
+
+export function lessonById(id) {
+  return LESSONS.find((l) => l.id === id) || null
+}

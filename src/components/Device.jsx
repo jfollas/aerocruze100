@@ -41,6 +41,7 @@ export default function Device({ variant, state, actions }) {
 
       <button
         className="hit btn-hit"
+        data-ctl="mode"
         style={box(v.mode)}
         onClick={actions.mode}
         aria-label="MODE button"
@@ -48,13 +49,14 @@ export default function Device({ variant, state, actions }) {
       />
       <button
         className="hit btn-hit"
+        data-ctl="alt"
         style={box(v.alt)}
         onClick={actions.alt}
         aria-label="ALT button"
         title="ALT"
       />
 
-      <div className="hit knob-wrap" style={box(v.knob)}>
+      <div className="hit knob-wrap" data-ctl="knob" style={box(v.knob)}>
         <Knob
           onRotate={actions.rotate}
           onPress={actions.knobPress}

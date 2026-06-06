@@ -38,22 +38,24 @@ const tail = TAIL.slice(1).map(wp) // ZIMBO, RW10 (after re-crossing UBAYA inbou
 // From the west you arrive established on the final approach course, so no
 // course reversal is needed — fly straight in (NoPT): UBAYA -> ZIMBO -> RW10.
 const directPlan = [{ name: 'START', ...add(U, E_IN, -5) }, uwp, ...tail]
-// Teardrop: arrive from the SE (holding side); cross UBAYA, fly the 30°-offset
-// teardrop into the holding side, then turn back onto the inbound leg.
+// Teardrop: arrive from the NE — your inbound heading (~225°) lands in the
+// teardrop sector. Cross UBAYA, fly the 30°-offset teardrop into the holding
+// (south) side, then turn back onto the inbound leg.
 const TD = add(U, unit(INB_T + 150), HOLD_LEG) // 30° off the outbound, toward the south
 const teardropPlan = [
-  { name: 'START', ...add(U, unit(INB_T + 45), 5) },
+  { name: 'START', ...add(U, unit(INB_T - 45), 5) },
   uwp,
   { name: 'td', ...TD },
   { name: 'hold', ...A },
   uwp,
   ...tail,
 ]
-// Parallel: arrive from the NE (non-holding side); cross UBAYA, parallel the
-// outbound course on the north side, then turn back to intercept inbound.
+// Parallel: arrive from the SE — your inbound heading (~315°) lands in the
+// parallel sector. Cross UBAYA, parallel the outbound course on the
+// non-holding (north) side, then turn back to intercept inbound.
 const PAR = add(add(U, E_OUT, HOLD_LEG), HOLD_SIDE, -2 * HOLD_R) // 4 NM west, offset north
 const parallelPlan = [
-  { name: 'START', ...add(U, unit(INB_T - 45), 5) },
+  { name: 'START', ...add(U, unit(INB_T + 45), 5) },
   uwp,
   { name: 'pl', ...PAR },
   uwp,
@@ -76,14 +78,18 @@ export const PLAN_ENTRY = {
   UBAYA_PARALLEL: 'PARALLEL',
 }
 
-// Which HILPT entry the 430W computes for an arrival position relative to UBAYA:
-// west of the fix -> direct; east + holding side (south) -> teardrop; east +
-// non-holding side (north) -> parallel.
+// Which HILPT entry the 430W computes for an arrival position relative to UBAYA.
+// Entry sectors are based on the inbound heading to the fix (a direct-to arrival
+// heads opposite the bearing from the fix). For this right-turn hold (inbound
+// 096°, holding side south): west of the fix you're established -> direct; from
+// the SE you arrive heading ~315° (parallel sector); from the NE you arrive
+// heading ~225° (teardrop sector). The teardrop/parallel sectors sit opposite
+// the side you're physically on because they key off heading, not position.
 export function holdEntry(pos) {
   const along = (pos.x - U.x) * E_IN.x + (pos.y - U.y) * E_IN.y
   const cross = (pos.x - U.x) * HOLD_SIDE.x + (pos.y - U.y) * HOLD_SIDE.y
   if (along < 0) return 'DIRECT'
-  return cross > 0 ? 'TEARDROP' : 'PARALLEL'
+  return cross > 0 ? 'PARALLEL' : 'TEARDROP' // south/SE -> parallel, north/NE -> teardrop
 }
 
 // How aggressively to chase the course line: degrees of intercept per nm of

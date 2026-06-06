@@ -8,10 +8,44 @@
   padding: 10px 16px;
   box-sizing: border-box;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* top nav row: title on the left, Tutorials launcher on the right */
+.app-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 8px;
+}
+.app-title {
+  margin: 0;
+  font-size: 1.12rem;
+  line-height: 1.2;
+  color: #dfe6f0;
+}
+.app-tut-launcher {
+  position: relative;
+}
+/* the launcher dropdown menu (lesson picker) */
+.tut-menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  z-index: 70;
+  width: 320px;
+  max-width: 90vw;
+  background: #161c25;
+  border: 1px solid #2c3744;
+  border-radius: 12px;
+  padding: 8px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
 }
 
 .app-main {
-  height: 100%;
+  flex: 1;
   display: grid;
   grid-template-columns: minmax(330px, 430px) minmax(320px, 420px) minmax(430px, 600px);
   gap: 16px;
@@ -31,18 +65,7 @@
   overflow-y: auto;
 }
 
-/* compact header, now living at the top of the left column */
-.app-head h1 {
-  font-size: 1.12rem;
-  line-height: 1.2;
-  margin: 0 0 3px;
-}
-.app-head .sub {
-  margin: 0 0 8px;
-  color: #9aa7b8;
-  font-size: 0.78rem;
-  line-height: 1.4;
-}
+/* unit selector, under the device in the left column */
 .switch-bar {
   display: flex;
   align-items: center;

@@ -38,6 +38,7 @@ export default function MasterPanel({ state, actions }) {
         <div className="master-ctl">
           <button
             className="cws-btn"
+            data-ctl="cws"
             disabled={!on}
             onPointerDown={cwsDown}
             onPointerUp={cwsUp}
@@ -51,6 +52,7 @@ export default function MasterPanel({ state, actions }) {
         <div className="master-ctl">
           <button
             className={'power-toggle' + (powerUp ? ' on' : '')}
+            data-ctl="pwr"
             role="switch"
             aria-checked={powerUp}
             aria-label="Power master switch"
@@ -67,6 +69,7 @@ export default function MasterPanel({ state, actions }) {
         <div className="master-ctl">
           <button
             className="level-btn"
+            data-ctl="level"
             disabled={!on}
             onClick={actions.apLvl}
             aria-label="Emergency Level"

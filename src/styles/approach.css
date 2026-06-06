@@ -205,41 +205,6 @@
   opacity: 0.85;
 }
 
-/* legend beside the plate */
-.apch-legend {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 8px 10px;
-  background: #0c1117;
-  border: 1px solid #2a3340;
-  border-radius: 8px;
-  font-size: 0.74rem;
-  color: #aebdcf;
-}
-.apch-legend span {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-}
-.apch-legend-ico {
-  width: 16px;
-  height: 16px;
-  flex: none;
-}
-.apch-legend-ico path {
-  fill: #ffd23f;
-  stroke: #0a0d11;
-  stroke-width: 0.8;
-  stroke-linejoin: round;
-}
-.apch-legend-line {
-  width: 18px;
-  height: 0;
-  flex: none;
-  border-top: 2px dashed #e0212b;
-}
-
 .apch-status {
   display: flex;
   flex-wrap: wrap;

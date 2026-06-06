@@ -23,11 +23,11 @@ describe('HILPT entry (matches the FAA right-turn hold, holding side south)', ()
   it('west of the fix -> direct', () => {
     expect(holdEntry(e(270, 5))).toBe('DIRECT') // due west
   })
-  it('east + south (holding side) -> teardrop', () => {
-    expect(holdEntry(e(135, 5))).toBe('TEARDROP') // southeast
+  it('SE arrival (heading ~315° to the fix) -> parallel', () => {
+    expect(holdEntry(e(135, 5))).toBe('PARALLEL') // southeast
   })
-  it('east + north (non-holding side) -> parallel', () => {
-    expect(holdEntry(e(45, 5))).toBe('PARALLEL') // northeast
+  it('NE arrival (heading ~225° to the fix) -> teardrop', () => {
+    expect(holdEntry(e(45, 5))).toBe('TEARDROP') // northeast
   })
   it('each UBAYA plan starts in its entry sector', () => {
     const sector = { UBAYA_DIRECT: 'DIRECT', UBAYA_TEARDROP: 'TEARDROP', UBAYA_PARALLEL: 'PARALLEL' }

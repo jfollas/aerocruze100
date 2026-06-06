@@ -1,0 +1,231 @@
+/* Walkthrough tutorial — a non-modal floating corner card (bottom-right) plus
+   the control-highlight glow driven by the root's data-tut-highlight attribute. */
+
+/* The wrapper never blocks the live controls; only the card itself is clickable.
+   left/top come from inline style (draggable, defaults to the upper-left). */
+.tut-wrap {
+  position: fixed;
+  z-index: 60;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  width: 340px;
+  max-width: calc(100vw - 28px);
+}
+
+.tut-launch {
+  pointer-events: auto;
+  background: #2d6cdf;
+  color: #fff;
+  border: 0;
+  border-radius: 999px;
+  padding: 9px 16px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
+}
+.tut-launch:hover {
+  background: #3a78ec;
+}
+
+.tut-card {
+  pointer-events: auto;
+  width: 100%;
+  background: #161c25;
+  border: 1px solid #2c3744;
+  border-radius: 12px;
+  padding: 12px 14px 14px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
+}
+
+.tut-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.tut-drag {
+  cursor: move;
+  user-select: none;
+  touch-action: none;
+}
+.tut-title {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #eaf2ff;
+  flex: 1;
+}
+.tut-count {
+  font-size: 0.72rem;
+  color: #8b99ab;
+  font-variant-numeric: tabular-nums;
+}
+.tut-x {
+  border: 0;
+  background: transparent;
+  color: #9aa7b8;
+  font-size: 1.3rem;
+  line-height: 1;
+  cursor: pointer;
+}
+.tut-x:hover {
+  color: #eaf2ff;
+}
+
+.tut-prog {
+  height: 3px;
+  background: #232c38;
+  border-radius: 2px;
+  overflow: hidden;
+  margin-bottom: 10px;
+}
+.tut-prog-fill {
+  height: 100%;
+  background: #2d6cdf;
+  transition: width 0.3s;
+}
+
+.tut-prompt {
+  margin: 0;
+  font-size: 0.92rem;
+  line-height: 1.45;
+  color: #dfe6f0;
+}
+.tut-note {
+  margin: 8px 0 0;
+  font-size: 0.76rem;
+  line-height: 1.45;
+  color: #8b99ab;
+}
+
+.tut-status {
+  margin: 10px 0;
+  font-size: 0.74rem;
+  min-height: 1em;
+}
+.tut-wait {
+  color: #7e8a9b;
+}
+.tut-wait::before {
+  content: '';
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-right: 6px;
+  border-radius: 50%;
+  background: #2d6cdf;
+  animation: tut-pulse 1.1s ease-in-out infinite;
+  vertical-align: middle;
+}
+.tut-done {
+  color: #19d2e6;
+  font-weight: 700;
+}
+
+.tut-actions {
+  display: flex;
+  gap: 8px;
+}
+.tut-btn {
+  flex: 1;
+  background: #232c38;
+  color: #c4cedb;
+  border: 1px solid #333d4b;
+  border-radius: 7px;
+  padding: 7px 10px;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+.tut-btn:hover:not(:disabled) {
+  border-color: #3f4d5e;
+}
+.tut-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.tut-next {
+  background: #2d6cdf;
+  border-color: #2d6cdf;
+  color: #fff;
+}
+.tut-next:hover {
+  background: #3a78ec;
+}
+
+/* lesson picker entries (used in the top-nav dropdown) */
+.tut-lesson {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: #1c232e;
+  border: 1px solid #2c3744;
+  border-radius: 8px;
+  padding: 9px 11px;
+  cursor: pointer;
+}
+.tut-lesson + .tut-lesson {
+  margin-top: 6px;
+}
+.tut-lesson:hover {
+  border-color: #3f4d5e;
+}
+.tut-lesson-title {
+  display: block;
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: #eaf2ff;
+}
+.tut-lesson-blurb {
+  display: block;
+  font-size: 0.74rem;
+  color: #8b99ab;
+  margin-top: 2px;
+  line-height: 1.4;
+}
+
+@keyframes tut-pulse {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* ---- control highlight: glow the element whose data-ctl matches the root's
+   data-tut-highlight value (one rule, all pairings comma-joined) ---- */
+.app[data-tut-highlight='mode'] [data-ctl='mode'],
+.app[data-tut-highlight='alt'] [data-ctl='alt'],
+.app[data-tut-highlight='knob'] [data-ctl='knob'],
+.app[data-tut-highlight='pwr'] [data-ctl='pwr'],
+.app[data-tut-highlight='cws'] [data-ctl='cws'],
+.app[data-tut-highlight='level'] [data-ctl='level'],
+.app[data-tut-highlight='navSource'] [data-ctl='navSource'],
+.app[data-tut-highlight='lpvToggle'] [data-ctl='lpvToggle'],
+.app[data-tut-highlight='gpsSignal'] [data-ctl='gpsSignal'],
+.app[data-tut-highlight='windSlider'] [data-ctl='windSlider'],
+.app[data-tut-highlight='bankSlider'] [data-ctl='bankSlider'],
+.app[data-tut-highlight='sensorBtn'] [data-ctl='sensorBtn'],
+.app[data-tut-highlight='cdiSource'] [data-ctl='cdiSource'],
+.app[data-tut-highlight='altBug'] [data-ctl='altBug'],
+.app[data-tut-highlight='svHdgKnob'] [data-ctl='svHdgKnob'],
+.app[data-tut-highlight='svAltKnob'] [data-ctl='svAltKnob'],
+.app[data-tut-highlight='iaf'] [data-ctl='iaf'] {
+  /* glow only — don't touch positioning/shape (the device hit-areas are
+     absolutely positioned and the SkyView knobs are circular) */
+  animation: tut-glow 1.1s ease-in-out infinite;
+}
+
+@keyframes tut-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 0 2px rgba(25, 210, 230, 0.5), 0 0 10px 2px rgba(25, 210, 230, 0.35);
+  }
+  50% {
+    box-shadow: 0 0 0 3px rgba(25, 210, 230, 0.95), 0 0 20px 5px rgba(25, 210, 230, 0.6);
+  }
+}
