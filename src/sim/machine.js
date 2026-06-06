@@ -5,7 +5,7 @@
 import * as E from './events.js'
 import { stepFlight, mod360 } from './flight.js'
 import { stepScenario } from './scenario.js'
-import { FIX_XY, FIELD_ELEV, bearingToTrue, trueToMag } from './geo.js'
+import { FIELD_ELEV, bearingToTrue, trueToMag } from './geo.js'
 import { PLANS, PLAN_ENTRY } from './navplan.js'
 
 const clamp = (x, lo, hi) => Math.max(lo, Math.min(hi, x))
@@ -16,13 +16,13 @@ const round = (x, step) => Math.round(x / step) * step
 // pilot must zero on the ALT SYNC screen (press ALT twice, then match). Aspen
 // (PMAEFIS Type 1) and Garmin G5 (Type 2) feed the baro-corrected altitude over
 // ARINC, so they keep the autopilot synced automatically.
-export const STARTUP_BARO_DELTA = 200 // mismatch present at power-up (startup checklist)
+const STARTUP_BARO_DELTA = 200 // mismatch present at power-up (startup checklist)
 const PREAPP_BARO_DELTA = 150 // re-introduced when arming GPSS for an approach (pre-procedure check)
 
 // True when the connected EFIS feeds the autopilot a digital baro-corrected
 // altitude over ARINC, keeping it auto-synced (no mismatch): Aspen and G5 only.
 // The SkyView cannot do this, so it still needs a manual ALT SYNC (a downside).
-export function baroAutoSync(s) {
+function baroAutoSync(s) {
   return s.arinc === 'aspen' || s.arinc === 'g5'
 }
 

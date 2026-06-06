@@ -138,7 +138,8 @@
   top: -7px; /* AEP sits ~7px higher */
   left: -3px; /* AEP nudged left 3px */
 }
-.lcd-home .bl.annun .lcd-big {
+.lcd-home .bl.annun .lcd-big,
+.lcd-home .bl-apoff .lcd-big {
   font-size: calc(var(--fs-label) + 2 * var(--fs-step)); /* STBY/OFF AP OFF, 2 steps larger */
 }
 /* AP OFF anchored to the right (independent of the AEP state on the left) on any
@@ -148,9 +149,6 @@
   right: calc(3% + 10px); /* universal right margin */
   bottom: 8%;
   align-items: baseline;
-}
-.lcd-home .bl-apoff .lcd-big {
-  font-size: calc(var(--fs-label) + 2 * var(--fs-step));
 }
 /* GPS signal indicator: fixed position (per symbol) on the home screen and the
    engaged operating screen, just below the header. */
@@ -356,7 +354,6 @@
   line-height: 0.95;
 }
 
-/* vertical "SET" letters, flowing just after the header (as on the device) */
 /* Vertical text (e.g. SET) renders in a fixed column, top-aligned with the
    header. This is the standard position for all vertical text. */
 .lcd-vertset {

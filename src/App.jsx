@@ -88,7 +88,7 @@ export default function App() {
               </div>
             </div>
           </header>
-          <Device variant={variant} state={state} dispatch={dispatch} actions={actions} />
+          <Device variant={variant} state={state} actions={actions} />
           <ConfigPanel state={state} actions={actions} />
           <p className="app-foot">
             <kbd>M</kbd> mode · <kbd>A</kbd> alt · <kbd>←</kbd>/<kbd>→</kbd> twist (<kbd>Shift</kbd> fine) ·

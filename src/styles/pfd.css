@@ -97,10 +97,6 @@
   stroke: #0a3a40;
   stroke-width: 0.6;
 }
-.pfd-bug-val {
-  fill: #05222a;
-  font: 800 8px/1 'Segoe UI', system-ui, sans-serif;
-}
 
 /* HSI */
 .pfd-hsi-bg {
@@ -127,11 +123,6 @@
   fill: #e641d6;
   font: 800 8px/1 'Segoe UI', system-ui, sans-serif;
   letter-spacing: 0.02em;
-}
-.pfd-cdi-src {
-  fill: #7fe6b4;
-  font: 800 11px/1 'Segoe UI', system-ui, sans-serif;
-  letter-spacing: 0.05em;
 }
 
 /* LPV glideslope indicator (right of the HSI) */

@@ -7,9 +7,8 @@ import { windVector, windAt } from './wind.js'
 
 export const TURN_RATE = 6 // deg/sec of heading change at full bank
 export const MAX_BANK = 25 // deg, the autopilot's commanded bank limit
-export const ROLL_RESPONSE = 1.5 // how quickly bank settles toward its target (1/sec)
+const ROLL_RESPONSE = 1.5 // how quickly bank settles toward its target (1/sec)
 export const VS_RESPONSE = 4 // how quickly actual VS chases target VS (1/sec)
-export const CRUISE_IAS = 110 // nominal cruise indicated airspeed (kt)
 const IAS_RESPONSE = 0.6 // how quickly IAS settles toward its target (1/sec)
 const PITCH_RESPONSE = 2 // how quickly pitch settles toward its target (1/sec)
 // Commanded fpm per foot of remaining altitude error. At 10 fpm/ft the easing

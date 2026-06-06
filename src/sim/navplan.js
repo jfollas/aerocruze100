@@ -86,8 +86,6 @@ export function holdEntry(pos) {
   return cross > 0 ? 'TEARDROP' : 'PARALLEL'
 }
 
-export const FAF = 'ZIMBO'
-
 // How aggressively to chase the course line: degrees of intercept per nm of
 // cross-track error, capped at a 45° intercept.
 const XTK_GAIN = 45

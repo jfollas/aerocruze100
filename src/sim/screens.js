@@ -28,9 +28,8 @@ const arrow = (vs) => (vs > 0 ? '↑' : vs < 0 ? '↓' : '')
 
 // Bottom-right vertical annunciation for the engaged operating screen.
 function verticalZone(s) {
-  if (s.warning === 'MIN_AS' || s.warning === 'MAX_AS') {
-    // SVS stays on the bottom-right; the warning sits top-right (handled below).
-  }
+  // On a MIN_AS/MAX_AS warning the SVS stays here on the bottom-right; the
+  // warning itself sits top-right (handled in deriveDisplay).
   switch (s.verticalMode) {
     case 'ALTHOLD':
       return { stacked: ['ALT', 'HOLD'] }

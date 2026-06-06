@@ -8,11 +8,10 @@ import { mod360 } from './flight.js'
 export const ARP = { lat: 41.391, lon: -83.6301 } // airport reference point
 export const FIELD_ELEV = 675 // ft MSL
 export const TDZE = 673 // ft MSL — touchdown zone / missed-approach point
-export const MAG_VAR = -6 // deg; west variation. true = mag + MAG_VAR
+const MAG_VAR = -6 // deg; west variation. true = mag + MAG_VAR
 export const FINAL_CRS_MAG = 96 // RWY 10 final approach course (magnetic)
-export const GLIDE_ANGLE = 3.04 // deg, LPV glidepath
-export const AP_MIN_AGL = 700 // ft; autopilot not authorised below this AGL
-export const AP_MIN_MSL = TDZE + AP_MIN_AGL // 1373 ft — disconnect floor
+const AP_MIN_AGL = 700 // ft; autopilot not authorised below this AGL
+export const AP_MIN_MSL = TDZE + AP_MIN_AGL // 1373 ft — autopilot floor advisory
 
 // Published fixes (decimal degrees).
 export const FIXES = {

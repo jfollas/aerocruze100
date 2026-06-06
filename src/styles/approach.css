@@ -259,9 +259,3 @@
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
-
-@media (max-width: 760px) {
-  .apch-views {
-    grid-template-columns: 1fr;
-  }
-}

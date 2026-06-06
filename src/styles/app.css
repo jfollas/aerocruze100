@@ -26,9 +26,7 @@
   min-width: 0;
   min-height: 0;
 }
-.col-left {
-  overflow-y: auto;
-}
+.col-left,
 .col-center {
   overflow-y: auto;
 }

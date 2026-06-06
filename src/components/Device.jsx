@@ -27,7 +27,7 @@ export const VARIANTS = {
 
 const box = (r) => ({ left: `${r.left}%`, top: `${r.top}%`, width: `${r.width}%`, height: `${r.height}%` })
 
-export default function Device({ variant, state, dispatch, actions }) {
+export default function Device({ variant, state, actions }) {
   const v = VARIANTS[variant]
   return (
     <div className="device">

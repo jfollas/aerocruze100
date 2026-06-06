@@ -7,7 +7,7 @@ const FINE_MS = 350 // held this long before twisting => fine increments
 
 // A circular knob you twist by dragging around its center. Tap = press,
 // hold = long-press, press-then-twist = fine increments (§5.3.1).
-export default function Knob({ onRotate, onPress, onHold, onFine }) {
+export default function Knob({ onRotate, onPress, onHold }) {
   const ref = useRef(null)
   const g = useRef(null)
   const [angle, setAngle] = useState(0)
@@ -55,7 +55,6 @@ export default function Knob({ onRotate, onPress, onHold, onFine }) {
       const f = performance.now() - s.t0 > FINE_MS
       s.fine = f
       setFine(f)
-      onFine?.(f)
     }
     if (!s.moved) return
 
