@@ -56,11 +56,17 @@ export default function App() {
 
   // Sim clock: ~10 Hz — the aircraft (and its PFD) is live regardless of the
   // autopilot's power state, but a tutorial freezes it during action steps.
+  // During "fly the airplane" waits a tutorial step can accelerate time: we keep
+  // the fixed 0.1 s integration step (so the flight model stays accurate) and
+  // simply run `mult` ticks per 100 ms interval, advancing the sim mult× faster.
+  const mult = tut.clockMultiplier || 1
   useEffect(() => {
     if (tut.paused) return
-    const id = setInterval(() => dispatch(E.tick(0.1)), 100)
+    const id = setInterval(() => {
+      for (let i = 0; i < mult; i++) dispatch(E.tick(0.1))
+    }, 100)
     return () => clearInterval(id)
-  }, [tut.paused])
+  }, [tut.paused, mult])
 
   // Keyboard shortcuts (handy for desktop + testing).
   const onKey = useCallback(
@@ -164,6 +170,14 @@ export default function App() {
       </main>
 
       <TutorialPanel tut={tut} />
+
+      {mult > 1 && (
+        <div className="clock-accel" role="status" aria-live="polite">
+          <span className="clock-accel-icon">⏩</span>
+          <span className="clock-accel-x">{mult}×</span>
+          <span className="clock-accel-lbl">fast-forward</span>
+        </div>
+      )}
 
       {welcome && <WelcomeModal onClose={() => setWelcome(false)} />}
     </div>

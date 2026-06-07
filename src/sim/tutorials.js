@@ -152,6 +152,7 @@ const startup = {
       prompt: 'Watch the autopilot bank and roll out on the new heading.',
       highlight: null,
       pause: false,
+      accel: 4,
       allowPreSatisfied: true,
       check: (s) => Math.abs(angleDiff(s.curTrack, s.selTrack)) < 3,
     },
@@ -174,6 +175,7 @@ const startup = {
       prompt: 'Watch the autopilot climb to 3,500 ft and capture it (back to ALT HOLD).',
       highlight: null,
       pause: false,
+      accel: true,
       check: (s) => s.verticalMode === 'ALTHOLD',
     },
     {
@@ -246,6 +248,7 @@ const coupledApproach = {
       prompt: 'Let it descend and level at 2300 while GPSS flies you toward ZIMBO.',
       highlight: null,
       pause: false,
+      accel: true,
       check: (s) => s.verticalMode === 'ALTHOLD' && s.curAlt < 2500,
     },
     {
@@ -254,6 +257,7 @@ const coupledApproach = {
       note: 'GS ARM → GS CPLD as the glidepath descends to meet you at the FAF.',
       highlight: null,
       pause: false,
+      accel: true,
       check: (s) => s.verticalMode === 'GS_CPLD',
     },
     {
@@ -261,12 +265,13 @@ const coupledApproach = {
       prompt: 'Ride the glidepath down. The autopilot is not authorized below 700 ft AGL.',
       highlight: null,
       pause: false,
+      accel: true,
       check: (s) => s.agl != null && s.agl <= 700,
     },
     {
       id: 'go-missed',
-      prompt: 'Going missed: press ALT to break off the glideslope and climb (the autopilot stays in GPSS).',
-      note: 'A momentary ALT press in GS CPLD starts a 500 fpm missed-approach climb, staying in GPSS (§5.4.6). The display shows SVS (the climb rate) — a missed approach has no target altitude.',
+      prompt: 'Going missed: while still coupled (GS CPLD), momentarily press ALT to break off the glideslope and climb (the autopilot stays in GPSS).',
+      note: 'This only works while GS CPLD — the ALT-press missed-approach climb (500 fpm, staying in GPSS, §5.4.6) can only be initiated while coupled to the glideslope. If you let it drop below 700 ft AGL or disconnect first, you fly the missed by hand. The display shows SVS (the climb rate) — a missed approach has no target altitude.',
       highlight: 'alt',
       check: (s) => s.verticalMode === 'SVS' && s.selVS > 0,
     },
@@ -275,6 +280,7 @@ const coupledApproach = {
       prompt: 'Watch the missed-approach climb away from the runway.',
       highlight: null,
       pause: false,
+      accel: true,
       check: (s) => s.agl != null && s.agl > 1000,
     },
     recapStep(
@@ -288,7 +294,9 @@ const skyview = {
   title: 'SkyView & nav variations',
   blurb: 'SkyView mode per the install manual: bugs, MODE in/out, ALT HOLD, a course & a crosswind.',
   init: (a) => {
-    reset(a, { ...NAV_NONE, groundSpeed: 150, curAlt: 3000, svAltBug: 3300, svVsBug: 0 })
+    // Bug starts at the current altitude and no VS, so the bug-setting steps need
+    // a real action (not pre-satisfied) and the later ALT HOLD demo gets a real climb.
+    reset(a, { ...NAV_NONE, groundSpeed: 150, curAlt: 3000, svAltBug: 3000, svVsBug: 0 })
     a.setConfig({ power: 'on' })
   },
   steps: [
@@ -312,16 +320,17 @@ const skyview = {
     },
     {
       id: 'alt-bug',
-      prompt: 'Set the altitude bug a few hundred feet above you (turn the SkyView ALT knob, or drag the alt tape).',
+      prompt: 'Set the altitude bug a few hundred feet above you — to about 3,300 ft. Turn the SkyView ALT knob, or drag the ALT bug up.',
+      note: 'Drag the bug itself (the marker beside the altitude tape), not the tape — dragging the tape moves the airplane’s altitude instead.',
       highlight: 'svAltKnob',
-      check: (s) => s.svAltBug >= 3200,
+      check: (s) => s.svAltBug >= 3300,
     },
     {
       id: 'vs-bug',
-      prompt: 'Now set a vertical-speed bug too: drag the VS tape to about +500 fpm.',
+      prompt: 'Now set a vertical-speed bug too — drag the VS bug up to about +500 fpm.',
       note: 'For vertical control the SkyView needs BOTH an altitude bug AND a VS bug — pick a VS appropriate for the target. (With no altitude bug set, the autopilot just follows the VS bug.)',
       highlight: 'vsBug',
-      check: (s) => Math.abs(s.svVsBug) >= 300,
+      check: (s) => s.svVsBug >= 300,
     },
     {
       id: 'enter-mode',
@@ -342,6 +351,7 @@ const skyview = {
       note: 'This takes a few seconds as it climbs to the bug.',
       highlight: null,
       pause: false,
+      accel: true,
       check: (s) => s.verticalMode === 'ALTHOLD',
     },
     {
@@ -375,6 +385,7 @@ const skyview = {
       prompt: 'Watch the autopilot crab into the wind — the magenta ground-track diamond offsets from the nose while the course stays centered.',
       highlight: null,
       pause: false,
+      accel: 4,
       check: (s) => Math.abs(angleDiff(s.curGT, s.curTrack)) >= 5,
     },
     {
@@ -420,6 +431,7 @@ const emergencies = {
       prompt: 'Emergency level recovers the airplane, then reverts to TRK after about 15 seconds.',
       highlight: null,
       pause: false,
+      accel: 4,
       setup: (a) => a.setConfig({ inducedBank: 0 }),
       check: (s) => !s.emergencyLevel && s.lateralMode === 'TRK' && s.apEngaged,
     },

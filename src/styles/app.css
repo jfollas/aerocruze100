@@ -155,3 +155,54 @@
     grid-column: auto;
   }
 }
+
+/* Time-acceleration badge — shown while a tutorial fast-forwards a fly-the-
+   airplane wait. Fixed top-centre, prominent and pulsing so it's unmistakable. */
+.clock-accel {
+  position: fixed;
+  top: 64px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 90;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 16px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #1d6fe0, #1657b8);
+  border: 1px solid #6fa8ff;
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  box-shadow: 0 4px 18px rgba(20, 90, 200, 0.5), 0 0 0 0 rgba(111, 168, 255, 0.6);
+  animation: clock-accel-pulse 1.1s ease-in-out infinite;
+  pointer-events: none;
+}
+.clock-accel-icon {
+  font-size: 1rem;
+}
+.clock-accel-x {
+  font-variant-numeric: tabular-nums;
+  font-size: 1.15rem;
+}
+.clock-accel-lbl {
+  font-weight: 600;
+  opacity: 0.9;
+  text-transform: uppercase;
+  font-size: 0.72rem;
+}
+@keyframes clock-accel-pulse {
+  0%,
+  100% {
+    box-shadow: 0 4px 18px rgba(20, 90, 200, 0.5), 0 0 0 0 rgba(111, 168, 255, 0.55);
+  }
+  50% {
+    box-shadow: 0 4px 18px rgba(20, 90, 200, 0.5), 0 0 0 6px rgba(111, 168, 255, 0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .clock-accel {
+    animation: none;
+  }
+}

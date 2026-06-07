@@ -74,6 +74,12 @@ describe('tutorial lessons are well-formed', () => {
         }
         if (step.check) expect(typeof step.check).toBe('function')
         if (step.setup) expect(typeof step.setup).toBe('function')
+        if (step.accel !== undefined) {
+          // a clock-acceleration tag is true or a multiplier > 1, and only on
+          // clock-running (pause:false) waits
+          expect(step.accel === true || (typeof step.accel === 'number' && step.accel > 1)).toBe(true)
+          expect(step.pause).toBe(false)
+        }
       }
     }
   })

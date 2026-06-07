@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { lessonById } from '../sim/tutorials.js'
 
+const ACCEL_DEFAULT = 8 // clock multiplier for steps tagged `accel: true`
+
 // Owns the walkthrough UI state and the step engine. Watches the reducer `state`
 // and auto-advances when the current step's `check` predicate is satisfied; runs
 // each lesson's `init` and each step's `setup` once; and exposes a `paused` flag
@@ -91,6 +93,16 @@ export function useTutorial(state, actions) {
   // compound step (e.g. ALT to open the screen, then the knob to dial/confirm)
   const rawHighlight = step ? (typeof step.highlight === 'function' ? step.highlight(state) : step.highlight) : null
 
+  // Time acceleration: clock-running "fly the airplane" waits (a leg, a hold, a
+  // climb) tag themselves with `accel` so the tutorial fast-forwards through the
+  // dull bits. We hold it at 1× during the ✓ flash so we don't over-fly the fix.
+  const clockMultiplier =
+    active && step && step.pause === false && !flash && step.accel
+      ? step.accel === true
+        ? ACCEL_DEFAULT
+        : step.accel
+      : 1
+
   return {
     active,
     lesson,
@@ -99,6 +111,7 @@ export function useTutorial(state, actions) {
     stepCount: steps.length,
     flash,
     paused: !!(active && step && step.pause !== false),
+    clockMultiplier,
     highlight: active && !flash && step ? rawHighlight || null : null,
     start: (id) => restart(() => { setLessonId(id); setStepIndex(0) }),
     exit: () => restart(() => { setLessonId(null); setStepIndex(0) }),
