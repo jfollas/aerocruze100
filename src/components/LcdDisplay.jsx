@@ -128,7 +128,7 @@ function TopRight({ tr }) {
   if (tr.plain) {
     return (
       <div className="lcd-zone tr">
-        <span className="lcd-lbl">{tr.value}</span>
+        <span className={'lcd-lbl' + (tr.flashing ? ' lcd-flash' : '')}>{tr.value}</span>
       </div>
     )
   }

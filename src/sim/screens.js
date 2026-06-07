@@ -179,8 +179,8 @@ export function deriveDisplay(s) {
   }
 
   // Right side
-  if (s.warning === 'MIN_AS') model.topRight = { value: 'MIN AS', plain: true }
-  else if (s.warning === 'MAX_AS') model.topRight = { value: 'MAX AS', plain: true }
+  if (s.warning === 'MIN_AS') model.topRight = { value: 'MIN AS', plain: true, flashing: true }
+  else if (s.warning === 'MAX_AS') model.topRight = { value: 'MAX AS', plain: true, flashing: true }
   else if (['SEL', 'ALTHOLD', 'GS_ARM', 'GS_CPLD', 'GS_FLG'].includes(s.verticalMode)) {
     // SEL altitude renders with the smaller/raised hundreds (like the pre-select),
     // underlined when the editing cursor is on it (SEL mode: track -> vs -> altSel).
