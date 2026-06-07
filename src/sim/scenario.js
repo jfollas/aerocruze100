@@ -32,7 +32,9 @@ import { PLANS, gpssGuidance } from './navplan.js'
 import { windVector, windAt, windCorrectedHeadingTrue } from './wind.js'
 
 const GS_DOT_FT = 50 // glideslope deviation: feet of error per dot on the GSI
-const APPROACH_IAS = 90 // kt flown on the approach
+const GP_CAPTURE_BAND = 100 // ft you may sit above the glidepath and still capture (intercept-from-below)
+const APPROACH_IAS = 90 // kt fallback used for guidance defaults
+const FINAL_IAS = 100 // kt the scenario slows to once inside the FAF
 // Bank limit that yields a standard-rate (3°/sec) turn in this model, so GPSS
 // fly-by transitions arc onto the next leg like a Garmin 430.
 const GPSS_BANK = MAX_BANK * (3 / TURN_RATE)
@@ -50,10 +52,45 @@ function glidepathAlt(dThrNm) {
   return TDZE + dThrNm * GP_GRADIENT
 }
 
+// WAAS/GPS CDI full-scale sensitivity by phase of flight, faithful to a GNS430W:
+//   • En route  (>30 NM from the airport)          : ±2.0 NM
+//   • Terminal  (≤30 NM, >2 NM before the FAF)      : ±1.0 NM
+//   • Approach  (final 2 NM into the FAF)           : ramps 1.0 -> 0.3 NM
+//   • LPV final (inside the FAF)                    : angular, ILS-like — the
+//       full scale tightens from 0.3 NM at the FAF toward ~350 ft (0.06 NM) at
+//       the threshold, so the needle converges on the runway like a localizer.
+// `angular` flags the LPV final so the PFD annunciates "LPV" instead of an NM.
+const APR_SENS = 0.3 // NM full-scale at/inside the FAF
+const TERM_SENS = 1.0 // NM full-scale in the terminal area
+const ENR_SENS = 2.0 // NM full-scale en route
+const APR_RAMP_NM = 2.0 // distance before the FAF over which 1.0 -> 0.3
+const LPV_FLOOR = 0.06 // NM (~350 ft), the tightest LPV full-scale near the runway
+function cdiSensitivity(legIdx, planLen, dThrNm, pos) {
+  if (legIdx >= planLen - 1) {
+    // Final leg (ZIMBO -> RW10): angular splay from the runway, capped at 0.3 NM.
+    const scale = clamp(dThrNm * (APR_SENS / FAF_DTHR), LPV_FLOOR, APR_SENS)
+    return { scale, angular: true }
+  }
+  if (dThrNm > 30) return { scale: ENR_SENS, angular: false }
+  const dFaf = nmBetween(pos, FIX_XY.ZIMBO) // nm to the FAF along the inbound legs
+  if (dFaf < APR_RAMP_NM) {
+    // Linear ramp: 0.3 NM at the FAF up to 1.0 NM at 2 NM out.
+    return { scale: APR_SENS + ((TERM_SENS - APR_SENS) / APR_RAMP_NM) * dFaf, angular: false }
+  }
+  return { scale: TERM_SENS, angular: false }
+}
+
 export function stepScenario(s, dt) {
   if (s.power === 'off' && s.groundSpeed <= 10) return {} // parked & unpowered
   const patch = {}
-  const tas = s.groundSpeed > 10 ? s.groundSpeed : 0 // commanded true airspeed
+
+  // Approach speed: cruise toward the FAF, then slow for the final segment so the
+  // tutorial doesn't dawdle. Once inside the FAF (ZIMBO) cap the speed at 100 kt
+  // and ease to it; outside the FAF keep the pilot's set speed (never speed it up).
+  const dThr0 = nmBetween({ x: s.curX, y: s.curY }, FIX_XY.RW10)
+  const spdTarget = dThr0 <= FAF_DTHR ? Math.min(s.groundSpeed, FINAL_IAS) : s.groundSpeed
+  const spd = approach(s.groundSpeed, spdTarget, 20 * dt)
+  const tas = spd > 10 ? spd : 0 // commanded true airspeed
 
   // Wind at the present altitude (gradient aloft; backed & slower near the
   // ground). The aircraft's ground vector is its air vector plus the wind.
@@ -82,6 +119,7 @@ export function stepScenario(s, dt) {
 
   patch.cdiDev = 0 // lateral course deviation in dots (+ = course is right, fly right)
   patch.cdiScale = null // CDI full-scale sensitivity (NM)
+  patch.cdiAngular = false // true on the LPV final, where scaling is angular (ILS-like)
   patch.cdiToFrom = null // TO/FROM flag
   if (onGpss && plan) {
     const legIdx = clamp(s.activeLeg || 1, 1, plan.length - 1)
@@ -89,10 +127,10 @@ export function stepScenario(s, dt) {
     activeLeg = g.sequence ? Math.min(g.nextLegIdx, plan.length - 1) : legIdx
     targetTrack = trueToMag(g.commandedTrackTrue)
     patch.selTrack = Math.round(mod360(targetTrack)) // reflect the GPS course on the bug
-    // course deviation: tighter full-scale on the final approach segment
-    const fullScale = legIdx >= plan.length - 1 ? 0.3 : 1.0
-    patch.cdiDev = clamp((-g.xtkNm / fullScale) * 3, -3.5, 3.5) // 3 dots = full scale
-    patch.cdiScale = fullScale
+    const { scale, angular } = cdiSensitivity(legIdx, plan.length, dThr0, { x: s.curX, y: s.curY })
+    patch.cdiDev = clamp((-g.xtkNm / scale) * 3, -3.5, 3.5) // 3 dots = full scale
+    patch.cdiScale = scale
+    patch.cdiAngular = angular
     patch.cdiToFrom = g.toFrom
   }
   patch.activeLeg = activeLeg
@@ -154,10 +192,13 @@ export function stepScenario(s, dt) {
     // climb, which leaves verticalMode as SVS with a positive selVS).
     const readyToCouple =
       s.verticalMode === 'ALTHOLD' || s.verticalMode === 'SEL' || (s.verticalMode === 'SVS' && s.selVS <= 0)
-    // Couple only when the glidepath has actually descended to the aircraft (the
-    // intercept at ZIMBO) — not the instant the final leg sequences, which would
-    // start the descent slightly before the FAF.
-    const captured = gpAlt <= s.curAlt
+    // Couple from BELOW only, as real WAAS/LPV autopilots do: the glidepath has
+    // to descend to meet the aircraft. You needn't be exactly at the 2300 ft
+    // platform — anywhere on the to-FAF leg, at or below the (sloping) path,
+    // works, so a higher-but-on-course aircraft intercepts and starts down
+    // before ZIMBO. But arriving well ABOVE the path won't couple (intercept-
+    // from-above is rejected); you'd fly through it and need VS to re-intercept.
+    const captured = gpAlt <= s.curAlt && s.curAlt - gpAlt <= GP_CAPTURE_BAND
     if (!coupled && armed && readyToCouple && captured) {
       coupled = true
       patch.verticalMode = 'GS_CPLD'
@@ -181,10 +222,8 @@ export function stepScenario(s, dt) {
   const onGround = rawAlt <= TDZE
   patch.curAlt = onGround ? TDZE : rawAlt
   patch.curVS = onGround ? 0 : newVS
-  if (onGround) {
-    patch.groundSpeed = 0
-    patch.curGS = 0
-  }
+  patch.groundSpeed = onGround ? 0 : spd // the (eased) approach speed
+  if (onGround) patch.curGS = 0
 
   // glideslope deviation for the PFD GSI (+ = below path, fly up)
   patch.gsDev = onApproach ? clamp(-(patch.curAlt - gpAlt) / GS_DOT_FT, -2, 2) : 0
@@ -195,9 +234,9 @@ export function stepScenario(s, dt) {
   patch.agl = patch.curAlt - FIELD_ELEV
 
   // ===== Airspeed & pitch =====
-  // IAS follows the simulated ground speed (set via the speed-tape drag or the
-  // Ground speed control), eased.
-  const { curIAS, pitch } = perfStep(s, dt, patch.curVS, onGround ? 0 : Math.max(0, s.groundSpeed))
+  // IAS follows the simulated ground speed (the scenario-managed approach speed,
+  // or the pilot's setting via the speed-tape / Ground speed control), eased.
+  const { curIAS, pitch } = perfStep(s, dt, patch.curVS, onGround ? 0 : Math.max(0, spd))
   patch.curIAS = curIAS
   patch.pitch = pitch
 

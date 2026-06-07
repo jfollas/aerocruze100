@@ -11,6 +11,45 @@ const PLANE =
 const clamp = (x, lo, hi) => Math.max(lo, Math.min(hi, x))
 const toRad = (d) => (d * Math.PI) / 180
 
+// chart scale (pixels per nm) and the standard-rate fly-by turn radius (~150 kt)
+const PX_PER_NM = Math.hypot(PLAN_CHART.a, PLAN_CHART.d)
+const FLYBY_R = 0.8 * PX_PER_NM
+
+// Round fly-by corners: replace a sharp interior waypoint (e.g. UBAYA on the
+// LEYIR/WUDAT arms) with the two tangent points of a standard-rate turn, so the
+// drawn course cuts the corner the way the GPSS autopilot actually flies it.
+// Gentle bends (the hold-entry arcs, the straight-in) are left untouched.
+function cutCorners(pts) {
+  if (pts.length < 3) return pts
+  const out = [pts[0]]
+  for (let i = 1; i < pts.length - 1; i++) {
+    const P = pts[i]
+    const a = { x: pts[i - 1].u - P.u, y: pts[i - 1].v - P.v }
+    const c = { x: pts[i + 1].u - P.u, y: pts[i + 1].v - P.v }
+    const la = Math.hypot(a.x, a.y)
+    const lc = Math.hypot(c.x, c.y)
+    if (la < 1 || lc < 1) {
+      out.push(P)
+      continue
+    }
+    const ua = { x: a.x / la, y: a.y / la }
+    const uc = { x: c.x / lc, y: c.y / lc }
+    const alpha = Math.acos(clamp(ua.x * uc.x + ua.y * uc.y, -1, 1)) // opening angle at P
+    // only round a sharp corner (>60° turn) with room on both legs — this picks
+    // the LEYIR/WUDAT turn onto final but leaves the hold-entry fix crossings,
+    // where you cross UBAYA rather than cut it, alone
+    if (alpha < toRad(120) && la > FLYBY_R * 1.2 && lc > FLYBY_R * 1.2) {
+      const tan = Math.min(FLYBY_R / Math.tan(alpha / 2), la * 0.45, lc * 0.45)
+      out.push({ u: P.u + ua.x * tan, v: P.v + ua.y * tan }) // tangent point on the inbound leg
+      out.push({ u: P.u + uc.x * tan, v: P.v + uc.y * tan }) // tangent point on the outbound leg
+    } else {
+      out.push(P)
+    }
+  }
+  out.push(pts[pts.length - 1])
+  return out
+}
+
 // Build a smooth SVG path through {u,v} points with a centripetal Catmull-Rom
 // spline (alpha = 0.5). The course passes through every waypoint, but the
 // course-reversal turns at UBAYA render as curves/half-circles instead of the
@@ -74,7 +113,7 @@ export default function ApproachMap({ state }) {
   // The loaded procedure track, drawn over the plan view as a magenta course
   // line (including any course-reversal / hold-entry shape at UBAYA).
   const coursePlan = state.scenarioActive && state.scenarioIaf && PLANS[state.scenarioIaf]
-  const course = coursePlan ? smoothPath(coursePlan.map((wp) => worldToChart(wp.x, wp.y))) : null
+  const course = coursePlan ? smoothPath(cutCorners(coursePlan.map((wp) => worldToChart(wp.x, wp.y)))) : null
 
   return (
     <div className="apch-map">

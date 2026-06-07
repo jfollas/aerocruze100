@@ -15,7 +15,7 @@ const KNOBS = [
   { id: 'hdg', cx: 15.5, cy: 54, dx: -2 },
   { id: 'alt', cx: 84, cy: 54 },
 ]
-const SENS = { hdg: 1, alt: 1000 / 360 } // value change per degree of knob rotation
+const SENS = { hdg: 0.5, alt: 8 } // value change per pixel of horizontal drag
 
 export default function SkyviewKnobs({ state, actions }) {
   const set = actions.setConfig
@@ -31,17 +31,14 @@ export default function SkyviewKnobs({ state, actions }) {
     else set({ svAltBug: clamp(round(curAlt, 100), 0, 17500), svAltBugSet: true })
   }
 
+  // Drag horizontally to turn: right = clockwise (increase), left = counter-
+  // clockwise (decrease) — same gesture as the autopilot knob.
   const handlers = (id) => ({
     onPointerDown: (e) => {
       e.currentTarget.setPointerCapture?.(e.pointerId)
-      const r = e.currentTarget.getBoundingClientRect()
-      const cx = r.left + r.width / 2
-      const cy = r.top + r.height / 2
       drag.current = {
         id,
-        cx,
-        cy,
-        ang: Math.atan2(e.clientY - cy, e.clientX - cx),
+        lastX: e.clientX,
         start: id === 'hdg' ? svHeadingBug : svAltBug,
         total: 0,
       }
@@ -49,17 +46,14 @@ export default function SkyviewKnobs({ state, actions }) {
     onPointerMove: (e) => {
       const d = drag.current
       if (!d || d.id !== id) return
-      const a = Math.atan2(e.clientY - d.cy, e.clientX - d.cx)
-      let delta = ((a - d.ang) * 180) / Math.PI
-      if (delta > 180) delta -= 360
-      if (delta < -180) delta += 360
-      d.ang = a
-      d.total += delta
+      const dx = e.clientX - d.lastX // + = dragging right, - = dragging left
+      d.lastX = e.clientX
+      d.total += dx
       apply(id, d.start + d.total * SENS[id])
     },
     onPointerUp: () => {
       const d = drag.current
-      if (d && d.id === id && Math.abs(d.total) < 6) sync(id) // negligible turn => a push
+      if (d && d.id === id && Math.abs(d.total) < 6) sync(id) // negligible drag => a push
       drag.current = null
     },
     onPointerCancel: () => {
@@ -88,7 +82,7 @@ export default function SkyviewKnobs({ state, actions }) {
             className={'skv-knob skv-' + k.id}
             data-ctl={k.id === 'hdg' ? 'svHdgKnob' : 'svAltKnob'}
             style={{ left: `calc(${k.cx}% + ${k.dx || 0}px)`, top: `calc(${k.cy}% + 6px)` }}
-            title={k.id === 'hdg' ? 'HDG/TRK — turn or scroll to set the heading bug, click to sync' : 'ALT — turn or scroll to set the altitude bug, click to sync'}
+            title={k.id === 'hdg' ? 'HDG/TRK — drag left/right or scroll to set the heading bug, click to sync' : 'ALT — drag left/right or scroll to set the altitude bug, click to sync'}
             aria-label={k.id === 'hdg' ? 'Heading bug knob' : 'Altitude bug knob'}
             {...handlers(k.id)}
             onWheel={wheel(k.id)}

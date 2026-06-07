@@ -3,7 +3,7 @@
 // returns the next state. All section references (§) point at that handbook.
 
 import * as E from './events.js'
-import { stepFlight, mod360 } from './flight.js'
+import { stepFlight, mod360, MIN_IAS } from './flight.js'
 import { stepScenario } from './scenario.js'
 import { FIELD_ELEV, bearingToTrue, trueToMag } from './geo.js'
 import { PLANS, PLAN_ENTRY } from './navplan.js'
@@ -77,6 +77,7 @@ export const initialState = {
   gpsDtk: null, // desired track of the active GPS leg (deg mag); drives the HSI needle
   cdiDev: 0, // lateral course deviation in dots (+ = course right of aircraft)
   cdiScale: null, // CDI full-scale sensitivity (NM)
+  cdiAngular: false, // CDI scaling is angular (LPV final) rather than linear NM
   cdiToFrom: null, // CDI TO/FROM flag: 'TO' | 'FROM' | null
 
   // RNAV (GPS) RWY 10 scenario (to-scale map + profile). When active, the
@@ -89,6 +90,7 @@ export const initialState = {
   activeLeg: 0, // index of the active leg in PLANS[scenarioIaf]
   agl: undefined, // height above field (ft); drives the 700-AGL warning
   inducedBank: 0, // for AEP demonstration while disengaged
+  inducedClimb: false, // held nose-up (bleeds airspeed) for the AEP low-speed demo
   trim: 'none', // none | up | dn — trim annunciation (§4.3)
 
   // Dynon SkyView interface (Installation Manual §10)
@@ -186,16 +188,14 @@ function applyConfig(state, patch) {
   if (fields.scenarioActive === true) {
     s = startScenario(s, fields.scenarioIaf || s.scenarioIaf)
   } else if (fields.scenarioActive === false) {
-    s = { ...s, gpsDtk: null, cdiDev: 0, cdiScale: null, cdiToFrom: null, hilptEntry: null }
+    s = { ...s, approachActive: false, gpsDtk: null, cdiDev: 0, cdiScale: null, cdiAngular: false, cdiToFrom: null, hilptEntry: null }
   }
   // Inducing a sensor error disengages and latches until power cycle (§8.4)
   if (fields.warning === 'SENSOR') {
     s = { ...s, apEngaged: false, verticalMode: null, screen: 'NORMAL' }
   }
-  // Induced bank only meaningful while disengaged (AEP demo, §8.2)
-  if ('inducedBank' in fields && !s.apEngaged) {
-    s.bankAngle = fields.inducedBank
-  }
+  // inducedBank (AEP demo, §8.2) is a *target*: the flight model eases the actual
+  // bank toward it (a gradual roll-off) rather than snapping, so the upset builds.
   return s
 }
 
@@ -611,10 +611,20 @@ function onTick(s, dt) {
     next = { ...next, verticalMode: 'ALTHOLD' }
   }
 
-  // AEP active/standby based on bank while disengaged (§8.2)
+  // AEP bank protection while disengaged (§8.2): trips ACTIVE above the 40° bank
+  // limit (the roll servo then nudges it back toward a safe angle), and clears to
+  // STBY once the bank is back inside the limit.
   if (!next.apEngaged && next.aep !== 'off') {
     if (Math.abs(next.bankAngle) > 40) next.aep = 'active'
-    else if (next.aep === 'active') next.aep = 'stby'
+    else if (next.aep === 'active' && Math.abs(next.bankAngle) < 34) next.aep = 'stby'
+  }
+
+  // Min-airspeed protection while engaged (§8.5): annunciate MIN AS and have the
+  // AP hold the minimum (the flight model lowers the nose). Gated to the induced
+  // nose-up demo so it doesn't clobber the manual Induce-Conditions airspeed flag.
+  if (next.apEngaged && next.inducedClimb) {
+    if (next.curIAS <= MIN_IAS && next.warning !== 'SENSOR') next.warning = 'MIN_AS'
+    else if (next.warning === 'MIN_AS' && next.curIAS >= MIN_IAS + 10) next.warning = null
   }
 
   return next

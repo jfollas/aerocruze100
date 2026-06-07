@@ -417,10 +417,11 @@ export default function Pfd({ state, actions }) {
             strokeLinejoin="round"
             pointerEvents="none"
           />
-          {/* CDI full-scale sensitivity */}
+          {/* CDI full-scale sensitivity — a NM value in en route/terminal/approach,
+              or "LPV" once scaling goes angular on the final (like a Garmin). */}
           {showCdi && state.cdiScale != null && (
             <text x={HSI_CX + 20} y={HSI_CY + 26} className="pfd-cdi-scale" textAnchor="start" pointerEvents="none">
-              {state.cdiScale.toFixed(1)} NM
+              {state.cdiAngular ? 'LPV' : `${state.cdiScale.toFixed(1)} NM`}
             </text>
           )}
         </g>

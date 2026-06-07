@@ -63,7 +63,15 @@ describe('tutorial lessons are well-formed', () => {
     for (const l of LESSONS) {
       for (const step of l.steps) {
         expect(typeof step.prompt).toBe('string')
-        expect(step.highlight === null || CONTROL_IDS.includes(step.highlight)).toBe(true)
+        if (typeof step.highlight === 'function') {
+          // a state-driven highlight must always resolve to a known control (or null)
+          for (const screen of ['NORMAL', 'SEL_ALT', 'ALT_SYNC']) {
+            const h = step.highlight({ ...initialState, screen })
+            expect(h === null || CONTROL_IDS.includes(h)).toBe(true)
+          }
+        } else {
+          expect(step.highlight === null || CONTROL_IDS.includes(step.highlight)).toBe(true)
+        }
         if (step.check) expect(typeof step.check).toBe('function')
         if (step.setup) expect(typeof step.setup).toBe('function')
       }
@@ -175,11 +183,9 @@ describe('Lesson 2 — Coupled approach + missed (playthrough)', () => {
     altSync(sim)
     expect(done('altsync-dial')).toBe(true)
 
-    sim.actions.setConfig({ approachActive: true })
-    expect(done('arm-approach')).toBe(true)
-
     sim.actions.setConfig({ scenarioActive: true, scenarioIaf: 'WUDAT' })
     expect(done('start-iaf')).toBe(true)
+    expect(sim.get().approachActive).toBe(true) // selecting the IAF auto-arms the approach
 
     sim.actions.knobPress() // engage
     expect(done('engage')).toBe(true)
@@ -286,6 +292,13 @@ describe('Lesson 4 — Emergencies & safety (playthrough)', () => {
     sim.tickUntil((s) => at('level-revert').check(s), 40)
     expect(done('level-revert')).toBe(true)
 
+    // Min-airspeed protection (engaged): a held climb bleeds the speed -> MIN AS
+    run('min-as')
+    sim.tickUntil((s) => at('min-as').check(s), 30)
+    expect(done('min-as')).toBe(true)
+    expect(sim.get().curIAS).toBeLessThanOrEqual(62) // bled to the minimum
+
+    run('cws') // ends the airspeed demo, then hold CWS
     sim.actions.cwsPress()
     expect(done('cws')).toBe(true)
     sim.actions.cwsRelease()
@@ -293,9 +306,18 @@ describe('Lesson 4 — Emergencies & safety (playthrough)', () => {
     sim.actions.knobHold() // disengage
     expect(done('disengage')).toBe(true)
 
-    run('aep-active')
-    sim.tickUntil((s) => at('aep-active').check(s), 30)
-    expect(done('aep-active')).toBe(true)
+    // AEP bank protection trips ACTIVE on the developing overbank (animated) and
+    // nudges the bank back inside the 40° limit (does not roll fully level)
+    run('aep-bank')
+    sim.tickUntil((s) => at('aep-bank').check(s), 30)
+    expect(done('aep-bank')).toBe(true)
+    sim.tickUntil((s) => s.aep === 'stby', 30) // nudged back below the limit
+    expect(Math.abs(sim.get().bankAngle)).toBeLessThan(40)
+
+    // AEP can be disabled with MODE while disengaged
+    run('aep-disable')
+    sim.actions.mode()
+    expect(done('aep-disable')).toBe(true)
 
     run('sensor')
     sim.actions.setConfig({ warning: 'SENSOR' })

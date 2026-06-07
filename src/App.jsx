@@ -9,6 +9,7 @@ import SkyviewKnobs from './components/SkyviewKnobs.jsx'
 import Pfd from './components/Pfd.jsx'
 import ApproachPanel from './components/ApproachPanel.jsx'
 import TutorialPanel from './components/TutorialPanel.jsx'
+import WelcomeModal from './components/WelcomeModal.jsx'
 import { useTutorial } from './hooks/useTutorial.js'
 import { LESSONS } from './sim/tutorials.js'
 import './styles/app.css'
@@ -37,6 +38,14 @@ export default function App() {
   const tut = useTutorial(state, actions)
   const [picker, setPicker] = useState(false) // tutorials dropdown (top nav)
   const [conditions, setConditions] = useState(false) // induce-conditions popup (top nav)
+  // First-load welcome / disclaimer modal (skipped if dismissed with "don't show again").
+  const [welcome, setWelcome] = useState(() => {
+    try {
+      return localStorage.getItem('aerocruze.welcomeSeen') !== '1'
+    } catch {
+      return true
+    }
+  })
 
   // Open the Conditions popup automatically when a tutorial step highlights one
   // of the controls that now lives inside it, so the glow/control is visible.
@@ -57,6 +66,7 @@ export default function App() {
   const onKey = useCallback(
     (e) => {
       if (e.target.tagName === 'INPUT') return
+      if (welcome) return // the welcome modal handles keys for its practice knob
       const fine = e.shiftKey
       const map = {
         m: actions.mode,
@@ -75,7 +85,7 @@ export default function App() {
         fn()
       }
     },
-    [actions]
+    [actions, welcome]
   )
   useEffect(() => {
     window.addEventListener('keydown', onKey)
@@ -154,6 +164,8 @@ export default function App() {
       </main>
 
       <TutorialPanel tut={tut} />
+
+      {welcome && <WelcomeModal onClose={() => setWelcome(false)} />}
     </div>
   )
 }

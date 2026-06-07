@@ -289,7 +289,11 @@ export default function LcdDisplay({ state }) {
           // 2- to 4-digit value (as on the level screen).
           <>
             <span className="lcd-lbl op-svs-lbl">{d.bottomRight.label}</span>
-            <span className={'lcd-big op-svs' + (d.cursor === 'vs' ? ' lcd-underline' : '')}>
+            <span
+              className={
+                'lcd-big op-svs' + (d.bottomRight.arrow ? ' op-svs-arrow' : '') + (d.cursor === 'vs' ? ' lcd-underline' : '')
+              }
+            >
               {d.bottomRight.value}
               {d.bottomRight.arrow}
             </span>

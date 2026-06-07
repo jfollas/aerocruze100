@@ -1,7 +1,9 @@
 import { describe, it, expect } from 'vitest'
 import { reducer, initialState } from './machine.js'
 import * as E from './events.js'
-import { FIX_XY, AP_MIN_MSL } from './geo.js'
+import { FIX_XY, AP_MIN_MSL, nmBetween } from './geo.js'
+
+const FAF_DTHR = nmBetween(FIX_XY.ZIMBO, FIX_XY.RW10) // ZIMBO -> threshold (~4.9 nm)
 
 // Boot the unit and load the scenario at the given IAF.
 function loaded(iaf, cfg = {}) {
@@ -62,6 +64,27 @@ describe('GNS430W + GPSS flies the published approach', () => {
     s = fly(s, 460) // well established on the glidepath
     expect(s.verticalMode).toBe('GS_CPLD')
     expect(Math.abs(s.gsDev)).toBeLessThan(0.35)
+  })
+
+  it('couples from below above the 2300 platform — intercepts the glidepath before ZIMBO', () => {
+    let s = coupledSetup('WUDAT')
+    s = { ...s, verticalMode: 'ALTHOLD', selAlt: 2700, curAlt: 2700 } // hold higher than the platform
+    let capture = null
+    for (let t = 0; t < 500 && !capture; t += 0.5) {
+      s = reducer(s, E.tick(0.5))
+      if (s.verticalMode === 'GS_CPLD') capture = { alt: s.curAlt, dThr: s.gsDist }
+    }
+    expect(capture).not.toBeNull()
+    expect(capture.alt).toBeGreaterThan(2300) // not required to be at the platform...
+    expect(capture.dThr).toBeGreaterThan(FAF_DTHR) // ...and it coupled before reaching the FAF
+  })
+
+  it('does NOT couple when arriving well above the glidepath (no intercept-from-above)', () => {
+    let s = coupledSetup('WUDAT')
+    s = { ...s, verticalMode: 'ALTHOLD', selAlt: 4500, curAlt: 4500 } // far above the path the whole way
+    s = fly(s, 260) // fly the inbound to the FAF holding 4500
+    expect(s.verticalMode).not.toBe('GS_CPLD') // never captured from above
+    expect(Math.round(s.curAlt)).toBe(4500) // still level — the GP passed below it
   })
 
   it('descends through the 700-AGL floor and flags the warning', () => {

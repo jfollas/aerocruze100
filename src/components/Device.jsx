@@ -10,9 +10,9 @@ export const VARIANTS = {
     img: 'aerocruze100-flata.webp', // chrome with a transparent display cut-out
     // slightly larger than the transparent cut-out so the bezel masks the edges
     glass: { left: 11.5, top: 42, width: 44.5, height: 16 },
-    mode: { left: 83.5, top: 41, width: 11, height: 8 },
-    alt: { left: 83.5, top: 52, width: 11, height: 8 },
-    knob: { left: 64.5, top: 43.5, width: 12, height: 12 },
+    mode: { left: 83.8, top: 41, width: 9.5, height: 5.5 },
+    alt: { left: 83.8, top: 52.4, width: 9.5, height: 5.7 },
+    knob: { left: 65.0, top: 44.5, width: 12, height: 12 }, // nudged center down ~4px, right ~2px
   },
   round: {
     label: '2-inch round',
@@ -21,7 +21,7 @@ export const VARIANTS = {
     glass: { left: 13, top: 33, width: 73.5, height: 26 },
     mode: { left: 16, top: 65, width: 21, height: 14 },
     alt: { left: 63, top: 65, width: 21, height: 14 },
-    knob: { left: 42, top: 68, width: 16, height: 16 },
+    knob: { left: 40.5, top: 69.2, width: 17, height: 17 }, // centred on the photo knob (~49%, 77.7%)
   },
 }
 

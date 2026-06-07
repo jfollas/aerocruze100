@@ -248,8 +248,13 @@
 .lcd-op .op-svs {
   position: absolute;
   right: calc(3% + 10cqh);
-  bottom: calc(8% + 6cqh); /* raised 6px */
-  font-size: var(--fs-alt-hundreds); /* same size as the ALT hundreds */
+  bottom: calc(8% + 2cqh); /* raised 2px */
+  font-size: var(--fs-label); /* larger SVS value, matching the label size */
+}
+/* with an up/down arrow, shift the value right 8px to leave room for a 4th
+   (thousands) digit; a zero SVS (no arrow) keeps the base position */
+.lcd-op .op-svs.op-svs-arrow {
+  right: calc(3% - 2cqh);
 }
 /* SkyView variant: SVS renders exactly as on the TRK page; the ALT label is
    pulled left to align with the SVS label. */
@@ -366,9 +371,21 @@
   font-size: var(--fs-vert); /* one step below the label size */
   line-height: 0.78; /* tight vertical character spacing */
 }
-/* the trim annunciation sits a little left of the SET column */
+/* the trim annunciation sits a little left of the SET column, and flashes while
+   displayed (0.5 s on, 0.5 s off) like the real unit */
 .lcd-vertset.lcd-trim-vert {
   left: calc(52% - 12cqh);
+  animation: lcd-trim-blink 1s steps(1, end) infinite;
+}
+@keyframes lcd-trim-blink {
+  0%,
+  49.9% {
+    opacity: 1;
+  }
+  50%,
+  100% {
+    opacity: 0;
+  }
 }
 /* UP keeps the top-aligned SET position; DOWN is bottom-aligned (arrow at foot) */
 .lcd-vertset.lcd-trim-down {
@@ -428,7 +445,8 @@
   animation: lcd-blink 1.1s steps(1, end) infinite;
 }
 @media (prefers-reduced-motion: reduce) {
-  .lcd-flash {
+  .lcd-flash,
+  .lcd-vertset.lcd-trim-vert {
     animation: none;
   }
 }

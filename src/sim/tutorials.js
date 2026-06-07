@@ -83,6 +83,12 @@ const bootStep = {
 
 const synced = (s) => Math.abs(s.altDelta) < 10
 
+// Highlight helpers for compound steps: the focus moves from the ALT button (to
+// open the screen) to the knob (to dial/confirm) as the screen state changes, so
+// the glow tracks what the user should press next.
+const altThenKnob = (s) => (s.screen === 'NORMAL' ? 'alt' : 'knob') // press ALT, then use the knob
+const altSyncFocus = (s) => (s.screen === 'ALT_SYNC' ? 'knob' : 'alt') // press ALT twice, then the knob
+
 // ALT SYNC (two steps): open the screen, then dial the offset to zero.
 const altSyncSteps = (note) => [
   {
@@ -99,6 +105,17 @@ const altSyncSteps = (note) => [
     check: (s) => synced(s) && s.screen === 'NORMAL',
   },
 ]
+
+// A closing step: recap what was covered and invite the user to close the panel.
+// It has no `check`, so it's a read-only notice the user finishes with the button.
+const recapStep = (text) => ({
+  id: 'recap',
+  prompt: text,
+  note: 'Tutorial complete — close this window (✕) whenever you’re ready.',
+  highlight: null,
+  pause: false,
+  setup: (a) => a.setConfig({ trim: 'none', inducedClimb: false }), // clear induced demo conditions
+})
 
 // LESSONS -------------------------------------------------------------------
 
@@ -141,22 +158,35 @@ const startup = {
       id: 'alt-hold',
       prompt: 'Press ALT, then press the knob WITHOUT turning it to hold the current altitude.',
       note: 'ALT then KNOB (no turn) captures the current altitude into ALT HOLD (§5.4.2).',
-      highlight: 'alt',
+      highlight: altThenKnob,
       check: (s) => s.verticalMode === 'ALTHOLD',
     },
     {
       id: 'sel-alt',
-      prompt: 'Now select a new altitude: press ALT, twist to the target, press the knob to move to SEL VS, set a climb/descent rate, then press to confirm.',
-      highlight: 'alt',
+      prompt: 'Now climb to 3,500 ft (just 500 above): press ALT, twist to 3500, press the knob to move to SEL VS, set about 700 fpm up, then press to confirm.',
+      note: 'A small altitude change with a healthy rate keeps the demo quick.',
+      highlight: altThenKnob,
       check: (s) => s.verticalMode === 'SEL',
     },
     {
       id: 'watch-capture',
-      prompt: 'Watch the autopilot fly to the selected altitude and capture it (back to ALT HOLD).',
+      prompt: 'Watch the autopilot climb to 3,500 ft and capture it (back to ALT HOLD).',
       highlight: null,
       pause: false,
       check: (s) => s.verticalMode === 'ALTHOLD',
     },
+    {
+      id: 'trim',
+      prompt:
+        'A note on trim: climbing or slowing down leaves the autopilot holding nose-up pressure. When it does, a flashing UP (or DN) trim arrow appears on the display — you’d add trim until it clears.',
+      note: 'This trainer has no trim control, so this is just to show the annunciation (induced here for illustration).',
+      highlight: null,
+      pause: false,
+      setup: (a) => a.setConfig({ trim: 'up' }),
+    },
+    recapStep(
+      'That’s the core flow: power on, ALT SYNC, engage, set a heading in TRK, then ALT HOLD to hold and SEL to climb/descend to a new altitude. Keep the airplane in trim as you go.'
+    ),
   ],
 }
 
@@ -165,7 +195,7 @@ const coupledApproach = {
   title: 'Coupled GPS approach (430W)',
   blurb: 'Fly the RNAV (GPS) RWY 10 fully coupled, then go missed at the MAP.',
   init: (a) => {
-    reset(a, { ...NAV_NONE, groundSpeed: 90, curAlt: 3000 })
+    reset(a, { ...NAV_NONE, groundSpeed: 150, curAlt: 3000 })
     a.setConfig({ power: 'on' })
   },
   steps: [
@@ -179,14 +209,9 @@ const coupledApproach = {
     },
     ...altSyncSteps('Pre-flight altimeter check — dial the autopilot offset to zero.'),
     {
-      id: 'arm-approach',
-      prompt: 'Arm the approach: set LPV approach to Active.',
-      highlight: 'lpvToggle',
-      check: (s) => s.approachActive === true,
-    },
-    {
       id: 'start-iaf',
-      prompt: 'Pick an initial fix to begin — try WUDAT (the south T-bar arm).',
+      prompt: 'Load the approach: pick an initial fix to begin — try WUDAT (the south T-bar arm).',
+      note: 'Loading an IAF arms the LPV approach automatically.',
       highlight: 'iaf',
       check: (s) => s.scenarioActive === true,
     },
@@ -206,13 +231,13 @@ const coupledApproach = {
       id: 'resync',
       prompt: 'Arming GPSS re-introduced a baro mismatch — ALT SYNC again as a pre-procedure check. Press ALT twice, dial the offset to ~0, press to confirm.',
       note: 'Real habit: verify the altimeter before every approach.',
-      highlight: 'alt',
+      highlight: altSyncFocus,
       check: (s) => synced(s) && s.screen === 'NORMAL',
     },
     {
       id: 'platform',
       prompt: 'Descend to the 2300 ft platform: press ALT, set 2300, add a descent rate (~700 fpm down), and confirm.',
-      highlight: 'alt',
+      highlight: altThenKnob,
       check: (s) => s.verticalMode === 'SEL' && s.selAlt <= 2400,
     },
     {
@@ -240,7 +265,7 @@ const coupledApproach = {
     {
       id: 'go-missed',
       prompt: 'Going missed: press ALT to break off the glideslope and climb (the autopilot stays in GPSS).',
-      note: 'A momentary ALT press in GS CPLD starts a 500 fpm missed-approach climb (§5.4.6).',
+      note: 'A momentary ALT press in GS CPLD starts a 500 fpm missed-approach climb, staying in GPSS (§5.4.6). The display shows SVS (the climb rate) — a missed approach has no target altitude.',
       highlight: 'alt',
       check: (s) => s.verticalMode === 'SVS' && s.selVS > 0,
     },
@@ -251,6 +276,9 @@ const coupledApproach = {
       pause: false,
       check: (s) => s.agl != null && s.agl > 1000,
     },
+    recapStep(
+      'You flew a fully coupled approach: 430W + GPSS flies the lateral plan, you stepped down to the 2,300 ft platform, the LPV glidepath coupled at the FAF, and an ALT press at the MAP started the missed-approach climb.'
+    ),
   ],
 }
 
@@ -259,7 +287,7 @@ const skyview = {
   title: 'SkyView & nav variations',
   blurb: 'Fly the SkyView bugs, an LNAV stepdown, a hold-in-lieu turn, and a crosswind.',
   init: (a) => {
-    reset(a, { ...NAV_NONE, groundSpeed: 90, curAlt: 3000 })
+    reset(a, { ...NAV_NONE, groundSpeed: 150, curAlt: 3000 })
     a.setConfig({ power: 'on' })
   },
   steps: [
@@ -305,7 +333,7 @@ const skyview = {
     },
     {
       id: 'stepdown',
-      prompt: 'No glideslope here — step down by lowering the SkyView ALT bug toward each crossing altitude.',
+      prompt: 'No glideslope here — step down by lowering the SkyView ALT bug to about 2,300 ft; the autopilot descends to the bug.',
       highlight: 'svAltKnob',
       pause: false,
       check: (s) => s.svAltBug <= 2400,
@@ -323,6 +351,9 @@ const skyview = {
       pause: false,
       check: (s) => Math.abs(angleDiff(s.curGT, s.curTrack)) >= 5,
     },
+    recapStep(
+      'With SkyView you fly the bugs (HDG/ALT), get the lateral GPS course but no coupled glideslope — so you step the ALT bug down through the crossing altitudes — and the autopilot crabs to hold the course in wind.'
+    ),
   ],
 }
 
@@ -338,7 +369,7 @@ const emergencies = {
     bootStep,
     {
       id: 'induce-bank',
-      prompt: "You're disengaged in a developing bank. Watch the wings drop.",
+      prompt: "You're disengaged in a developing bank — the airplane is rolling off into a descending turn, picking up speed.",
       highlight: null,
       pause: false,
       setup: (a) => a.setConfig({ inducedBank: 25 }),
@@ -347,17 +378,27 @@ const emergencies = {
     },
     {
       id: 'level',
-      prompt: 'Press LEVEL — the autopilot engages and rolls wings-level, zero VS.',
+      prompt: 'It keeps banking, turning, and descending. Press LEVEL — the autopilot engages and rolls wings-level, zero VS.',
       highlight: 'level',
+      pause: false, // keep the sim live so the upset develops until LEVEL recovers it
       check: (s) => s.emergencyLevel === true,
     },
     {
       id: 'level-revert',
-      prompt: 'Emergency level recovers, then reverts to TRK after a few seconds.',
+      prompt: 'Emergency level recovers the airplane, then reverts to TRK after about 15 seconds.',
       highlight: null,
       pause: false,
       setup: (a) => a.setConfig({ inducedBank: 0 }),
       check: (s) => !s.emergencyLevel && s.lateralMode === 'TRK' && s.apEngaged,
+    },
+    {
+      id: 'min-as',
+      prompt: 'Airspeed protection (engaged): a held nose-up bleeds the speed. At the minimum, MIN AS flashes and the autopilot lowers the nose to hold the minimum until the speed recovers.',
+      note: 'This works while the autopilot is engaged — separate from AEP, which is the bank backstop while disengaged.',
+      highlight: null,
+      pause: false,
+      setup: (a) => a.setConfig({ inducedClimb: true, groundSpeed: 120 }),
+      check: (s) => s.warning === 'MIN_AS',
     },
     {
       id: 'cws',
@@ -365,6 +406,7 @@ const emergencies = {
       note: 'A quick TAP of CWS instead disconnects the autopilot.',
       highlight: 'cws',
       pause: false,
+      setup: (a) => a.setConfig({ inducedClimb: false, warning: null }), // end the airspeed demo
       check: (s) => s.cwsHeld === true,
     },
     {
@@ -374,13 +416,21 @@ const emergencies = {
       check: (s) => !s.apEngaged,
     },
     {
-      id: 'aep-active',
-      prompt: 'AEP stays armed (STBY) while the autopilot is off. Drag the Bank slider past 40° — AEP trips to ACTIVE and levels you.',
-      note: 'Automatic Emergency Protection: an upset-recovery backstop when the AP is disengaged.',
-      highlight: 'bankSlider',
+      id: 'aep-bank',
+      prompt: 'AEP stays armed (STBY) while the autopilot is off. Watch a bank develop — at 40° AEP trips to ACTIVE and nudges the bank back inside the limit (it holds you off the limit; it does not roll fully level).',
+      note: 'Automatic Emergency Protection: a hands-off bank backstop when the AP is disengaged.',
+      highlight: null,
       pause: false,
-      setup: (a) => a.setConfig({ aep: 'stby', inducedBank: 50 }),
+      setup: (a) => a.setConfig({ aep: 'stby', inducedBank: 50, inducedClimb: false }),
       check: (s) => s.aep === 'active',
+    },
+    {
+      id: 'aep-disable',
+      prompt: 'AEP can be turned off: while disengaged, press MODE to toggle it OFF.',
+      note: 'Only disable it for planned maneuvers — steep turns, stalls — where the protection would get in the way. Re-arm it (MODE again) afterward.',
+      highlight: 'mode',
+      setup: (a) => a.setConfig({ aep: 'stby', inducedBank: 0, inducedClimb: false }),
+      check: (s) => s.aep === 'off',
     },
     {
       id: 'sensor',
@@ -400,9 +450,12 @@ const emergencies = {
       id: 'gotcha',
       prompt: 'After the cycle the baro mismatch is back. ALT SYNC again before flying: press ALT twice, dial to ~0.',
       note: 'The altimeter offset returns on every power-up (unless an Aspen/G5 auto-syncs it).',
-      highlight: 'alt',
+      highlight: altSyncFocus,
       check: synced,
     },
+    recapStep(
+      'Your safety net: LEVEL for an upset; CWS to hand-fly and resume; the MIN/MAX airspeed protection that holds the limits while engaged; and AEP, the hands-off bank backstop when disengaged (which you can turn off for planned maneuvers). And a sensor latch clears only on a power cycle, after which you ALT SYNC again.'
+    ),
   ],
 }
 

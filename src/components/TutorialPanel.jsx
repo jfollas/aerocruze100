@@ -34,6 +34,7 @@ export default function TutorialPanel({ tut }) {
   if (!tut.active) return null
 
   const { lesson, step, stepIndex, stepCount, flash } = tut
+  const isLast = stepIndex === stepCount - 1
   const pct = Math.round(((stepIndex + (flash ? 1 : 0)) / stepCount) * 100)
   return (
     <div className="tut-wrap" style={{ left: pos.x, top: pos.y }}>
@@ -55,6 +56,8 @@ export default function TutorialPanel({ tut }) {
         <div className="tut-status">
           {flash ? (
             <span className="tut-done">✓ done</span>
+          ) : isLast ? (
+            <span className="tut-done">✓ Tutorial complete</span>
           ) : step.check ? (
             <span className="tut-wait">waiting for your action…</span>
           ) : (
@@ -66,7 +69,7 @@ export default function TutorialPanel({ tut }) {
             ‹ Prev
           </button>
           <button className="tut-btn tut-next" onClick={tut.next}>
-            {step.check ? 'Skip ›' : 'Next ›'}
+            {isLast ? 'Finish ✓' : step.check ? 'Skip ›' : 'Next ›'}
           </button>
         </div>
       </div>

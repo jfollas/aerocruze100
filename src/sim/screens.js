@@ -104,11 +104,13 @@ export function deriveDisplay(s) {
   }
 
   // Altitude select / pre-select setup (§5.4.3, §5.4.4). Larger SEL ALT label,
-  // thousands larger than the (normal-size, top-aligned) hundreds, no vertical SET.
+  // thousands larger than the (normal-size, top-aligned) hundreds, with the
+  // vertical SET prompt in the centre (as on the ALT SYNC page).
   if (s.screen === 'SEL_ALT') {
     const model = {
       klass: 'lcd-sel-alt',
       topLeft: { header: 'SEL ALT' },
+      vertSet: true,
       topRight: { alt: Math.round(s.selAlt), underline: s.cursor === 'altSel' },
     }
     if (s.apEngaged) {
@@ -180,8 +182,9 @@ export function deriveDisplay(s) {
   if (s.warning === 'MIN_AS') model.topRight = { value: 'MIN AS', plain: true }
   else if (s.warning === 'MAX_AS') model.topRight = { value: 'MAX AS', plain: true }
   else if (['SEL', 'ALTHOLD', 'GS_ARM', 'GS_CPLD', 'GS_FLG'].includes(s.verticalMode)) {
-    // SEL altitude renders with the smaller/raised hundreds (like the pre-select).
-    model.topRight = { label: 'SEL', alt: Math.round(s.selAlt) }
+    // SEL altitude renders with the smaller/raised hundreds (like the pre-select),
+    // underlined when the editing cursor is on it (SEL mode: track -> vs -> altSel).
+    model.topRight = { label: 'SEL', alt: Math.round(s.selAlt), underline: s.cursor === 'altSel' }
   }
   model.bottomRight = verticalZone(s)
   return model

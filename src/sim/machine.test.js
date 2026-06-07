@@ -105,7 +105,7 @@ describe('altitude select & sync (§5.1, §5.4.3)', () => {
     expect(s.cursor).toBe('vs')
     s = reducer(s, E.knobPress()) // confirm -> SEL transition
     expect(s.verticalMode).toBe('SEL')
-    expect(deriveDisplay(s).topRight).toEqual({ label: 'SEL', alt: 4000 })
+    expect(deriveDisplay(s).topRight).toEqual({ label: 'SEL', alt: 4000, underline: false })
     // fly up to the target
     for (let i = 0; i < 600 && s.verticalMode === 'SEL'; i++) s = reducer(s, E.tick(0.5))
     expect(s.verticalMode).toBe('ALTHOLD')

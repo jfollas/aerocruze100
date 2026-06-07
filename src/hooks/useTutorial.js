@@ -87,6 +87,10 @@ export function useTutorial(state, actions) {
     cb()
   }
 
+  // a step's highlight may be a function of state, so the focus can move within a
+  // compound step (e.g. ALT to open the screen, then the knob to dial/confirm)
+  const rawHighlight = step ? (typeof step.highlight === 'function' ? step.highlight(state) : step.highlight) : null
+
   return {
     active,
     lesson,
@@ -95,7 +99,7 @@ export function useTutorial(state, actions) {
     stepCount: steps.length,
     flash,
     paused: !!(active && step && step.pause !== false),
-    highlight: active && !flash && step ? step.highlight || null : null,
+    highlight: active && !flash && step ? rawHighlight || null : null,
     start: (id) => restart(() => { setLessonId(id); setStepIndex(0) }),
     exit: () => restart(() => { setLessonId(null); setStepIndex(0) }),
     next: () => { if (!flash) advance() },
