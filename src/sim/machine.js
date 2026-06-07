@@ -602,7 +602,9 @@ function onTick(s, dt) {
     ((next.verticalMode === 'SVS' && next.selVS === 0) || next.verticalMode === 'ALTHOLD')
   if (gsEligible && next.verticalMode !== 'GS_ARM' && !next.verticalMode.startsWith?.('GS_')) {
     next = { ...next, verticalMode: next.glideslopeFlagged ? 'GS_FLG' : 'GS_ARM', gsTimer: 4 }
-  } else if (next.verticalMode === 'GS_ARM') {
+  } else if (!next.scenarioActive && next.verticalMode === 'GS_ARM') {
+    // Legacy (non-scenario) timer-based couple. In the scenario, GS_ARM is held
+    // and coupling is driven by position (at the FAF) inside stepScenario.
     const t = next.gsTimer - dt
     if (t <= 0) next = { ...next, verticalMode: 'GS_CPLD', gsTimer: 0 }
     else next.gsTimer = t

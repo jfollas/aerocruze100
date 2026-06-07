@@ -191,7 +191,10 @@ export function stepScenario(s, dt) {
     // Couple at the FAF when level/descending (not while flying a missed-approach
     // climb, which leaves verticalMode as SVS with a positive selVS).
     const readyToCouple =
-      s.verticalMode === 'ALTHOLD' || s.verticalMode === 'SEL' || (s.verticalMode === 'SVS' && s.selVS <= 0)
+      s.verticalMode === 'ALTHOLD' ||
+      s.verticalMode === 'GS_ARM' ||
+      s.verticalMode === 'SEL' ||
+      (s.verticalMode === 'SVS' && s.selVS <= 0)
     // Couple from BELOW only, as real WAAS/LPV autopilots do: the glidepath has
     // to descend to meet the aircraft. You needn't be exactly at the 2300 ft
     // platform — anywhere on the to-FAF leg, at or below the (sloping) path,
@@ -202,6 +205,11 @@ export function stepScenario(s, dt) {
     if (!coupled && armed && readyToCouple && captured) {
       coupled = true
       patch.verticalMode = 'GS_CPLD'
+    } else if (!coupled && armed && (s.verticalMode === 'ALTHOLD' || s.verticalMode === 'GS_ARM')) {
+      // Established inbound and holding the platform: annunciate GS ARM on the
+      // autopilot itself (the glideslope is armed and will couple when the path
+      // is intercepted at the FAF), not just on the PFD.
+      patch.verticalMode = 'GS_ARM'
     }
     lpvPhase = coupled ? 'CPLD' : armed ? 'ARM' : null
   }

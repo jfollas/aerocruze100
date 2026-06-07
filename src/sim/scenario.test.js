@@ -27,6 +27,12 @@ const fly = (s, secs, step = 0.5) => {
   return s
 }
 
+// Tick until `pred` holds (or `maxSecs` elapses), at 0.1 s resolution.
+const tickUntil = (s, pred, maxSecs = 300) => {
+  for (let t = 0; t < maxSecs && !pred(s); t += 0.1) s = reducer(s, E.tick(0.1))
+  return s
+}
+
 describe('scenario start', () => {
   it('snaps the aircraft to the chosen IAF', () => {
     const s = loaded('WUDAT')
@@ -57,6 +63,20 @@ describe('GNS430W + GPSS flies the published approach', () => {
     expect(s.verticalMode).toBe('GS_CPLD')
     expect(s.lpvPhase).toBe('CPLD')
     expect(s.curAlt).toBeLessThan(2200) // descending the glidepath
+  })
+
+  it('annunciates GS ARM once established inbound (past UBAYA), before coupling at ZIMBO', () => {
+    let s = coupledSetup('WUDAT')
+    // fly until it sequences onto the to-FAF leg (past the UBAYA fly-by)
+    s = tickUntil(s, (x) => x.activeLeg >= 2, 400)
+    expect(s.activeLeg).toBe(2) // UBAYA -> ZIMBO, established on the final course
+    expect(s.verticalMode).toBe('GS_ARM') // armed on the autopilot itself, not just the PFD
+    expect(s.lpvPhase).toBe('ARM')
+    expect(nmBetween({ x: s.curX, y: s.curY }, FIX_XY.ZIMBO)).toBeGreaterThan(0.5) // still well short of the FAF
+    // it stays armed (not coupled) all the way down the platform to the FAF
+    s = tickUntil(s, (x) => x.verticalMode === 'GS_CPLD', 400)
+    expect(s.verticalMode).toBe('GS_CPLD')
+    expect(nmBetween({ x: s.curX, y: s.curY }, FIX_XY.ZIMBO)).toBeLessThan(0.5) // coupled at the FAF
   })
 
   it('captures an off-course condition without the bank hunting (no limit cycle)', () => {
