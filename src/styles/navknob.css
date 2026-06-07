@@ -1,0 +1,61 @@
+/* Rotary nav-source mode selector */
+.navknob {
+  display: flex;
+  justify-content: center;
+  padding: 2px 0 4px;
+}
+.navknob-svg {
+  width: 100%;
+  max-width: 200px;
+  height: auto;
+}
+
+.navknob-tick {
+  stroke: #5a6573;
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+.navknob-base {
+  fill: #11151c;
+  stroke: #3a4250;
+  stroke-width: 2;
+}
+.navknob-face {
+  fill: url(#navknob-face-grad);
+  stroke: #454f5d;
+  stroke-width: 1.5;
+  cursor: pointer;
+}
+.navknob-cap {
+  fill: #3a4250;
+  stroke: #11151c;
+  stroke-width: 1.5;
+  cursor: pointer;
+}
+.navknob-rotor {
+  transform-box: view-box;
+  transition: transform 0.25s ease;
+}
+.navknob-ptr {
+  stroke: #19d2e6;
+  stroke-width: 4;
+  stroke-linecap: round;
+}
+.navknob-ptr-dot {
+  fill: #19d2e6;
+}
+
+.navknob-label {
+  fill: #8b99ab;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  cursor: pointer;
+  user-select: none;
+}
+.navknob-label:hover {
+  fill: #c4cedb;
+}
+.navknob-label.active {
+  fill: #19d2e6;
+}

@@ -1,33 +1,28 @@
 import { useRef, useState } from 'react'
 
-const STEP_DEG = 16 // degrees of twist per detent
+const STEP_PX = 14 // pixels of horizontal drag per detent
+const STEP_DEG = 16 // degrees the mark turns per detent
 const TAP_MS = 250 // up within this with no movement => press
 const HOLD_MS = 1500 // held this long with no movement => long-press (disengage)
 const FINE_MS = 350 // held this long before twisting => fine increments
 
-// A circular knob you twist by dragging around its center. Tap = press,
-// hold = long-press, press-then-twist = fine increments (§5.3.1).
+// A circular knob you twist by dragging horizontally: drag right turns it
+// clockwise (increment), drag left turns it counter-clockwise (decrement).
+// Tap = press, hold = long-press, press-then-twist = fine increments (§5.3.1).
 export default function Knob({ onRotate, onPress, onHold }) {
   const ref = useRef(null)
   const g = useRef(null)
   const [angle, setAngle] = useState(0)
   const [fine, setFine] = useState(false)
 
-  const center = () => {
-    const r = ref.current.getBoundingClientRect()
-    return { x: r.left + r.width / 2, y: r.top + r.height / 2 }
-  }
-  const angleAt = (e, c) => (Math.atan2(e.clientY - c.y, e.clientX - c.x) * 180) / Math.PI
-
   const down = (e) => {
     e.preventDefault()
     ref.current.setPointerCapture(e.pointerId)
-    const c = center()
     g.current = {
-      c,
-      last: angleAt(e, c),
+      lastX: e.clientX,
       accum: 0,
       moved: false,
+      fine: false,
       t0: performance.now(),
       holdTimer: setTimeout(() => {
         if (g.current && !g.current.moved) {
@@ -42,12 +37,9 @@ export default function Knob({ onRotate, onPress, onHold }) {
   const move = (e) => {
     const s = g.current
     if (!s) return
-    const a = angleAt(e, s.c)
-    let delta = a - s.last
-    if (delta > 180) delta -= 360
-    if (delta < -180) delta += 360
-    s.last = a
-    s.accum += delta
+    const dx = e.clientX - s.lastX // + = dragging right, - = dragging left
+    s.lastX = e.clientX
+    s.accum += dx
 
     if (!s.moved && Math.abs(s.accum) > 4) {
       s.moved = true
@@ -58,10 +50,10 @@ export default function Knob({ onRotate, onPress, onHold }) {
     }
     if (!s.moved) return
 
-    setAngle((x) => x + delta)
-    while (Math.abs(s.accum) >= STEP_DEG) {
-      const dir = s.accum > 0 ? 1 : -1
-      s.accum -= dir * STEP_DEG
+    setAngle((x) => x + dx * (STEP_DEG / STEP_PX)) // turn the mark with the drag
+    while (Math.abs(s.accum) >= STEP_PX) {
+      const dir = s.accum > 0 ? 1 : -1 // right -> CW (+1), left -> CCW (-1)
+      s.accum -= dir * STEP_PX
       onRotate?.(dir, s.fine)
     }
   }
@@ -85,7 +77,7 @@ export default function Knob({ onRotate, onPress, onHold }) {
       onPointerCancel={up}
       role="button"
       tabIndex={0}
-      aria-label="Autopilot knob — drag to twist, tap to press, hold to disengage"
+      aria-label="Autopilot knob — drag right/left to twist, tap to press, hold to disengage"
     >
       <div className="knob-mark" style={{ transform: `rotate(${angle}deg)` }} />
       {fine && <span className="knob-fine">FINE</span>}

@@ -9,7 +9,6 @@ import '../styles/skyview.css'
 // shown but left inert.
 const round = (x, step) => Math.round(x / step) * step
 const clamp = (x, lo, hi) => Math.max(lo, Math.min(hi, x))
-const pad = (n) => String(Math.round(n)).padStart(3, '0')
 
 // knob centres as a percentage of the photo (594 × 304)
 const KNOBS = [
@@ -76,7 +75,6 @@ export default function SkyviewKnobs({ state, actions }) {
 
   return (
     <div className="cfg-group skv-card">
-      <h3>SkyView knobs</h3>
       <div className="skv-panel">
         <img
           className="skv-img"
@@ -96,15 +94,6 @@ export default function SkyviewKnobs({ state, actions }) {
             onWheel={wheel(k.id)}
           />
         ))}
-      </div>
-      <div className="skv-readout">
-        <span>
-          HDG <b>{pad(svHeadingBug)}°</b>
-        </span>
-        <span>
-          ALT <b>{svAltBugSet ? Math.round(svAltBug) + '′' : '– – –'}</b>
-        </span>
-        <span className="skv-hint">turn or scroll · click to sync</span>
       </div>
     </div>
   )

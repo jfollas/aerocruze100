@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import NavSourceKnob from './NavSourceKnob.jsx'
 import '../styles/config.css'
 
 // The autopilot accepts one nav source at a time. In our aircraft a panel
@@ -24,8 +24,9 @@ function navSourceOf(s) {
   return 'none'
 }
 
-// A segmented control bound to one config field.
-function Seg({ label, value, options, onChange, ctl }) {
+// A segmented control bound to one config field. Shared with the Induce
+// Conditions popup (ConditionsPanel).
+export function Seg({ label, value, options, onChange, ctl }) {
   return (
     <div className="cfg-row" data-ctl={ctl}>
       <span className="cfg-label">{label}</span>
@@ -44,145 +45,24 @@ function Seg({ label, value, options, onChange, ctl }) {
   )
 }
 
-// Tabbed systems card: NAV SOURCE (what's feeding the autopilot) and INDUCE
-// CONDITIONS (outlier signals to trigger for familiarization).
+// NAV SOURCE card: what's feeding the autopilot. The outlier "induce conditions"
+// signals now live in the top-nav Conditions popup (ConditionsPanel).
 export default function ConfigPanel({ state, actions }) {
   const set = actions.setConfig
-  const on = state.power === 'on'
-  const [tab, setTab] = useState('nav')
 
   return (
-    <div className="cfg-group cfg-tabs-card">
-      <div className="cfg-tabs" role="tablist">
-        <button role="tab" aria-selected={tab === 'nav'} className={'cfg-tab' + (tab === 'nav' ? ' active' : '')} onClick={() => setTab('nav')}>
-          Nav source
-        </button>
-        <button role="tab" aria-selected={tab === 'induce'} className={'cfg-tab' + (tab === 'induce' ? ' active' : '')} onClick={() => setTab('induce')}>
-          Induce conditions
-        </button>
-      </div>
-
-      {tab === 'nav' && (
-        <div className="cfg-tab-body">
-          <Seg
-            label="Source"
-            ctl="navSource"
-            value={navSourceOf(state)}
-            options={[
-              { value: 'gns430w', text: '430W' },
-              { value: 'skyview', text: 'SkyView' },
-              { value: 'portable', text: 'Portable' },
-              { value: 'aspen', text: 'Aspen' },
-              { value: 'g5', text: 'G5' },
-              { value: 'none', text: 'None' },
-            ]}
-            onChange={(p) => set(NAV_SOURCES[p])}
-          />
-          {state.gpsData === 'ifr' && (
-            <Seg
-              label="LPV approach"
-              ctl="lpvToggle"
-              value={state.approachActive ? 'yes' : 'no'}
-              options={[
-                { value: 'no', text: 'Off' },
-                { value: 'yes', text: 'Active' },
-              ]}
-              onChange={(p) => set({ approachActive: p === 'yes' })}
-            />
-          )}
-        </div>
-      )}
-
-      {tab === 'induce' && (
-        <div className="cfg-tab-body">
-          <Seg
-            label="GPS signal"
-            ctl="gpsSignal"
-            value={state.gpsStatus}
-            options={[
-              { value: 'NOGPS', text: 'None' },
-              { value: 'NOFIX', text: 'No fix' },
-              { value: 'OK', text: 'OK' },
-            ]}
-            onChange={(p) => set({ gpsStatus: p })}
-          />
-          <Seg
-            label="Airspeed"
-            value={state.groundSpeed > 10 ? 'fly' : 'gnd'}
-            options={[
-              { value: 'gnd', text: '< 10 kt' },
-              { value: 'fly', text: '> 10 kt' },
-            ]}
-            onChange={(p) => set({ groundSpeed: p === 'fly' ? 120 : 0 })}
-          />
-          <div className="cfg-row">
-            <span className="cfg-label">Wind dir (aloft)</span>
-            <input
-              type="range"
-              min="0"
-              max="350"
-              step="10"
-              value={state.windDir}
-              onChange={(e) => set({ windDir: Number(e.target.value) })}
-            />
-            <span className="cfg-val">{String(state.windDir).padStart(3, '0')}°</span>
-          </div>
-          <div className="cfg-row" data-ctl="windSlider">
-            <span className="cfg-label">Wind speed (aloft)</span>
-            <input
-              type="range"
-              min="0"
-              max="45"
-              value={state.windSpd}
-              onChange={(e) => set({ windSpd: Number(e.target.value) })}
-            />
-            <span className="cfg-val">{state.windSpd} kt</span>
-          </div>
-          <Seg
-            label="Trim"
-            value={state.trim}
-            options={[
-              { value: 'none', text: 'OK' },
-              { value: 'up', text: 'Up' },
-              { value: 'dn', text: 'Down' },
-            ]}
-            onChange={(p) => set({ trim: p })}
-          />
-          <Seg
-            label="Airspeed"
-            value={state.warning === 'MIN_AS' ? 'min' : state.warning === 'MAX_AS' ? 'max' : 'ok'}
-            options={[
-              { value: 'ok', text: 'Normal' },
-              { value: 'min', text: 'Min AS' },
-              { value: 'max', text: 'Max AS' },
-            ]}
-            onChange={(p) => set({ warning: p === 'min' ? 'MIN_AS' : p === 'max' ? 'MAX_AS' : null })}
-          />
-          <div className="cfg-row" data-ctl="bankSlider">
-            <span className="cfg-label">Bank (AEP)</span>
-            <input
-              type="range"
-              min="0"
-              max="60"
-              value={Math.abs(state.inducedBank)}
-              disabled={state.apEngaged}
-              onChange={(e) => set({ inducedBank: Number(e.target.value) })}
-            />
-            <span className="cfg-val">{Math.abs(Math.round(state.bankAngle))}°</span>
-          </div>
-          <div className="cfg-row">
-            <span className="cfg-label">Sensor</span>
-            <div className="cfg-seg">
-              <button className="cfg-opt" data-ctl="sensorBtn" disabled={!on || state.warning === 'SENSOR'} onClick={() => set({ warning: 'SENSOR' })}>
-                Trigger error
-              </button>
-              <button className="cfg-opt" disabled={!on} onClick={() => set({ power: 'off' })}>
-                Power cycle
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+    <div className="cfg-group">
+      <h3>Nav source</h3>
+      <NavSourceKnob
+        ctl="navSource"
+        value={navSourceOf(state)}
+        options={[
+          { value: 'skyview', text: 'SkyView', angle: -60 }, // 10 o'clock
+          { value: 'gns430w', text: 'GPS', angle: 0 }, // 12 o'clock
+          { value: 'none', text: 'None', angle: 60 }, // 2 o'clock
+        ]}
+        onChange={(p) => set(NAV_SOURCES[p])}
+      />
     </div>
   )
 }

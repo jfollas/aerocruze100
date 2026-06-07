@@ -66,7 +66,7 @@
   font-size: var(--fs-sm);
   line-height: 0.6;
   position: relative;
-  top: -3px; /* nudge the GPS signal indicator up */
+  top: -3cqh; /* nudge the GPS signal indicator up */
 }
 
 .lcd-underline {
@@ -110,7 +110,7 @@
 .lcd-sel-alt .tr,
 .lcd-alt-sync .tl,
 .lcd-alt-sync .tr {
-  top: calc(8% + 3px); /* extra top margin */
+  top: calc(8% + 3cqh); /* extra top margin */
 }
 
 /* SEL ALT altitude: thousands 2 steps above the (raised) hundreds. */
@@ -126,8 +126,8 @@
   font-size: var(--fs-label); /* NO GPS header, same as SEL ALT */
 }
 .lcd-home .tl {
-  top: calc(8% + 3px); /* same top margin as SEL ALT */
-  left: calc(3% + 12px); /* top line nudged right 2px */
+  top: calc(8% + 3cqh); /* same top margin as SEL ALT */
+  left: calc(3% + 12cqh); /* top line nudged right 2px */
 }
 .lcd-home .bl {
   bottom: 8%; /* bottom row dropped 3px (was 8% + 3px) */
@@ -135,8 +135,8 @@
 .lcd-home .bl.annun .lcd-sup {
   font-size: var(--fs-label); /* AEP, same size as the header */
   position: relative;
-  top: -7px; /* AEP sits ~7px higher */
-  left: -3px; /* AEP nudged left 3px */
+  top: -7cqh; /* AEP sits ~7px higher */
+  left: -3cqh; /* AEP nudged left 3px */
 }
 .lcd-home .bl.annun .lcd-big,
 .lcd-home .bl-apoff .lcd-big {
@@ -146,7 +146,7 @@
    disengaged screen, so it stays put when AEP toggles STBY/OFF. */
 .bl-apoff {
   position: absolute;
-  right: calc(3% + 10px); /* universal right margin */
+  right: calc(3% + 10cqh); /* universal right margin */
   bottom: 8%;
   align-items: baseline;
 }
@@ -155,7 +155,7 @@
 .lcd-home .lcd-qual-fixed,
 .lcd-op .lcd-qual-fixed {
   position: absolute;
-  top: calc(8% - 1px + var(--fs-label)); /* just below the header, nudged up 4px total */
+  top: calc(8% - 1cqh + var(--fs-label)); /* just below the header, nudged up 4px total */
   font-size: calc(var(--fs-sm) + var(--fs-step)); /* one step larger (24cqh) */
 }
 .lcd-home .lcd-qual-fixed.q-plus,
@@ -169,22 +169,22 @@
 .lcd-home .lcd-qual-fixed.q-dot,
 .lcd-op .lcd-qual-fixed.q-dot {
   left: 12%;
-  top: calc(8% - 5px + var(--fs-label)); /* period sits low — raise it 4px */
+  top: calc(8% - 5cqh + var(--fs-label)); /* period sits low — raise it 4px */
 }
 
 /* Engaged operating screen (§5.3): TRK / GPSS / GPS NAV. Labels match the SEL
    ALT screen; the heading values (current track + selected track) are large
    like the bank-angle digits; the SEL altitude uses the raised hundreds. */
 .lcd-op {
-  --rlabel-left: calc(58.3% - 12px); /* left of the right-side label column (SEL/ALT) */
-  --svs-left: calc(56% - 3px); /* left of the SVS label (and the SkyView ALT label) */
+  --rlabel-left: calc(58.3% - 12cqh); /* left of the right-side label column (SEL/ALT) */
+  --svs-left: calc(56% - 3cqh); /* left of the SVS label (and the SkyView ALT label) */
 }
 .lcd-op .lcd-lbl {
   font-size: var(--fs-label);
 }
 .lcd-op .tl,
 .lcd-op .tr {
-  top: calc(8% + 3px); /* same top margin as SEL ALT */
+  top: calc(8% + 3cqh); /* same top margin as SEL ALT */
 }
 .lcd-op .bl,
 .lcd-op .br {
@@ -199,20 +199,20 @@
 /* nudge the TRK (top-left) value up slightly */
 .lcd-op .tl .lcd-head-val {
   position: relative;
-  top: -2px;
+  top: -2cqh;
 }
 /* SEL altitude top-right: SEL label fixed at the right-column left; value
    right-aligned with large thousands + smaller, top-aligned hundreds. */
 .lcd-op .op-sel-lbl {
   position: absolute;
   left: var(--rlabel-left);
-  top: calc(8% + 3px);
+  top: calc(8% + 3cqh);
   font-size: var(--fs-label);
 }
 .lcd-op .op-sel-val {
   position: absolute;
-  right: calc(3% + 10px);
-  top: calc(8% + 3px);
+  right: calc(3% + 10cqh);
+  top: calc(8% + 3cqh);
   display: inline-flex;
   align-items: flex-start;
 }
@@ -228,12 +228,12 @@
 .lcd-op .op-annun-sup {
   position: absolute;
   left: var(--rlabel-left);
-  bottom: calc(8% + 0.5em - 4px); /* raised half a character height, then down 4px */
+  bottom: calc(8% + 0.5em - 4cqh); /* raised half a character height, then down 4px */
   font-size: var(--fs-label);
 }
 .lcd-op .op-annun-word {
   position: absolute;
-  right: calc(3% + 10px);
+  right: calc(3% + 10cqh);
   bottom: 8%;
   font-size: var(--fs-annun);
 }
@@ -247,8 +247,8 @@
 }
 .lcd-op .op-svs {
   position: absolute;
-  right: calc(3% + 10px);
-  bottom: calc(8% + 6px); /* raised 6px */
+  right: calc(3% + 10cqh);
+  bottom: calc(8% + 6cqh); /* raised 6px */
   font-size: var(--fs-alt-hundreds); /* same size as the ALT hundreds */
 }
 /* SkyView variant: SVS renders exactly as on the TRK page; the ALT label is
@@ -262,7 +262,7 @@
 .lcd-elvl .elvl-bank {
   position: absolute;
   left: 10%;
-  top: calc(8% + 3px);
+  top: calc(8% + 3cqh);
   bottom: 8%;
   display: flex;
   flex-direction: column;
@@ -286,20 +286,20 @@
 }
 .lcd-elvl .elvl-svs-lbl {
   position: absolute;
-  left: calc(56% - 18px); /* clear a 4-digit SVS value (with arrow) on the right */
+  left: calc(56% - 18cqh); /* clear a 4-digit SVS value (with arrow) on the right */
   bottom: 14%;
   font-size: var(--fs-label);
 }
 .lcd-elvl .elvl-svs {
   position: absolute;
-  right: calc(3% + 10px);
+  right: calc(3% + 10cqh);
   bottom: 18%; /* bumped up to leave room for the cursor underline */
   font-size: var(--fs-label);
 }
 /* gyro-backup may show a stacked vertical (e.g. ALT HOLD) instead of SVS */
 .lcd-elvl .elvl-vert-stacked {
   position: absolute;
-  right: calc(3% + 10px);
+  right: calc(3% + 10cqh);
   bottom: 10%;
 }
 .lcd-elvl .elvl-vert-stacked .lcd-big {
@@ -320,21 +320,21 @@
 /* ---- zone positions (percentages of the glass) ---- */
 /* the 10px left/right inset applies to every screen */
 .tl {
-  left: calc(3% + 10px);
+  left: calc(3% + 10cqh);
   top: 8%;
 }
 .bl {
-  left: calc(3% + 10px);
+  left: calc(3% + 10cqh);
   bottom: 8%;
   align-items: baseline;
 }
 .tr {
-  right: calc(3% + 10px);
+  right: calc(3% + 10cqh);
   top: 8%;
   align-items: baseline;
 }
 .br {
-  right: calc(3% + 10px);
+  right: calc(3% + 10cqh);
   bottom: 8%;
   align-items: baseline;
 }
@@ -359,7 +359,7 @@
 .lcd-vertset {
   position: absolute;
   left: 52%;
-  top: calc(8% + 7px);
+  top: calc(8% + 7cqh);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -368,12 +368,12 @@
 }
 /* the trim annunciation sits a little left of the SET column */
 .lcd-vertset.lcd-trim-vert {
-  left: calc(52% - 12px);
+  left: calc(52% - 12cqh);
 }
 /* UP keeps the top-aligned SET position; DOWN is bottom-aligned (arrow at foot) */
 .lcd-vertset.lcd-trim-down {
   top: auto;
-  bottom: calc(8% + 7px);
+  bottom: calc(8% + 7cqh);
 }
 
 /* full-screen messages */

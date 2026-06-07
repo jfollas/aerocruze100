@@ -172,7 +172,7 @@ const coupledApproach = {
     bootStep,
     {
       id: 'src-430w',
-      prompt: 'Select 430W as the nav source.',
+      prompt: 'Select GPS as the nav source.',
       note: 'A WAAS IFR GPS gives GPSS roll steering and the coupled LPV glidepath.',
       highlight: 'navSource',
       check: (s) => s.gpsData === 'ifr' && s.skyview === 'off',

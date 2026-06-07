@@ -1,11 +1,10 @@
-/* RNAV (GPS) RWY 10 approach trainer panel — fills the right column height */
+/* RNAV (GPS) RWY 10 approach trainer panel — sized to the (portrait) plate, not
+   stretched to the full column height */
 .apch {
   background: #11151c;
   border: 1px solid #2a3340;
   border-radius: 10px;
   padding: 12px 14px 14px;
-  height: 100%;
-  min-height: 0;
   display: flex;
   flex-direction: column;
   gap: 0;
@@ -109,19 +108,15 @@
   align-items: center;
   justify-content: center;
 }
-/* fit the (portrait) plate to the available height */
+/* the (portrait) plate sizes to the column width; its height follows from that
+   (and is bounded by the column's max width), so the approach card has a fixed
+   natural height that doesn't track the viewport. the other columns grow to
+   share this bottom. */
 .apch-map svg {
   display: block;
-  height: 100%;
-  width: auto;
-  max-width: 100%;
+  width: 100%;
+  height: auto;
 }
-.apch-side {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
 /* instructions modal (opened by the info button) */
 .apch-modal {
   position: fixed;
@@ -203,24 +198,4 @@
   stroke-width: 4;
   stroke-dasharray: 14 10;
   opacity: 0.85;
-}
-
-.apch-status {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px 16px;
-  padding: 8px 10px;
-  background: #0c1117;
-  border: 1px solid #2a3340;
-  border-radius: 8px;
-  font-size: 0.8rem;
-  color: #c8d4e2;
-}
-.apch-status b {
-  color: #8b99ab;
-  font-weight: 700;
-  margin-right: 4px;
-  font-size: 0.66rem;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
 }
