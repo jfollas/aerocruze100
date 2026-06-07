@@ -123,10 +123,6 @@ const MAX_INTERCEPT = 45
 // Standard-rate (3°/sec) turn radius in nm: r = v / (60π).
 const turnRadiusNm = (groundSpeed) => Math.max(groundSpeed, 1) / (60 * Math.PI)
 
-// Heading error (deg) below which we consider the aircraft established on the
-// leg and switch from "turn onto the course" to cross-track fine tracking.
-const ESTABLISHED_DEG = 8
-
 // GPSS guidance for the active leg. Returns the commanded TRUE track to fly,
 // the signed cross-track error (+ = right of course), and whether to sequence
 // to the next leg. `trackTrue` is the aircraft's current true track.
@@ -146,18 +142,16 @@ export function gpssGuidance(plan, legIdx, pos, groundSpeed, trackTrue) {
   const along = relx * ux + rely * uy
   const xtk = uy * relx - ux * rely // + = right of course
 
-  // While turning onto the leg (heading well off the course), command the leg
-  // course itself so the standard-rate turn arcs smoothly onto it (a fly-by).
-  // Once roughly established, switch to a cross-track intercept for fine
-  // tracking. (trackTrue may be undefined in unit tests -> behave as established.)
-  const hdgErr = trackTrue == null ? 0 : Math.abs(angleDiff(trackTrue, legCourse))
-  let commandedTrackTrue
-  if (hdgErr > ESTABLISHED_DEG) {
-    commandedTrackTrue = legCourse
-  } else {
-    const intercept = Math.max(-MAX_INTERCEPT, Math.min(MAX_INTERCEPT, XTK_GAIN * xtk))
-    commandedTrackTrue = mod360(legCourse - intercept)
-  }
+  // Continuous cross-track intercept: command a track offset from the course
+  // proportional to the cross-track error, capped at a 45° intercept. As the
+  // aircraft nears the line the intercept eases off, so it captures smoothly and
+  // — being bank-rate-limited — still arcs onto the leg like a fly-by. (We used
+  // to hard-switch to "command the raw leg course" while the heading was >8° off,
+  // but that discontinuity made the bank hunt: the intercept command itself
+  // re-grew the heading error past the threshold, so the law toggled every few
+  // ticks and the bank chattered shallowly around level while holding course.)
+  const intercept = Math.max(-MAX_INTERCEPT, Math.min(MAX_INTERCEPT, XTK_GAIN * xtk))
+  const commandedTrackTrue = mod360(legCourse - intercept)
 
   // sequencing — never sequence off the final leg (B is the last waypoint)
   const isFinalLeg = legIdx >= plan.length - 1

@@ -59,6 +59,24 @@ describe('GNS430W + GPSS flies the published approach', () => {
     expect(s.curAlt).toBeLessThan(2200) // descending the glidepath
   })
 
+  it('captures an off-course condition without the bank hunting (no limit cycle)', () => {
+    let s = coupledSetup('UBAYA_DIRECT')
+    s = { ...s, curY: s.curY + 0.8 } // displace 0.8 nm off the inbound course
+    let prev = 0
+    let flips = 0
+    for (let t = 0; t < 180; t += 0.1) {
+      s = reducer(s, E.tick(0.1))
+      if (s.groundSpeed < 5) break
+      const b = s.bankAngle
+      if (Math.sign(b) && Math.sign(prev) && Math.sign(b) !== Math.sign(prev)) flips++
+      if (Math.sign(b)) prev = b
+    }
+    // A smooth capture reverses the bank only a couple of times; the old
+    // establish/intercept switch chattered hundreds of times around level.
+    expect(flips).toBeLessThan(5)
+    expect(Math.abs(s.cdiDev)).toBeLessThan(0.3) // and it ends established on course
+  })
+
   it('keeps the glideslope centred while coupled', () => {
     let s = coupledSetup('WUDAT')
     s = fly(s, 460) // well established on the glidepath
