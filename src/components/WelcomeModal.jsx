@@ -87,6 +87,11 @@ export default function WelcomeModal({ onClose }) {
           of the display fonts used on the actual device, so the on-screen text is an
           approximation.
         </p>
+        <p className="welc-disclaimer welc-affil">
+          Looking For Traffic is <b>not affiliated with, endorsed by, or sponsored by</b>{' '}
+          BendixKing or Honeywell. All product names, trademarks, and registered trademarks are
+          the property of their respective owners.
+        </p>
 
         <h3 className="welc-sub">Turning the knobs</h3>
         <ul className="welc-list">

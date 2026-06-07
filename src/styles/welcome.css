@@ -53,6 +53,11 @@
 .welc-box b {
   color: #dfe6f0;
 }
+.welc-affil {
+  font-size: 0.74rem;
+  color: #8c9aab;
+  margin-top: -6px;
+}
 .welc-sub {
   margin: 14px 0 6px;
   font-size: 0.95rem;
