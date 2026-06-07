@@ -212,6 +212,7 @@
 .app[data-tut-highlight='sensorBtn'] [data-ctl='sensorBtn'],
 .app[data-tut-highlight='cdiSource'] [data-ctl='cdiSource'],
 .app[data-tut-highlight='altBug'] [data-ctl='altBug'],
+.app[data-tut-highlight='vsBug'] [data-ctl='vsBug'],
 .app[data-tut-highlight='svHdgKnob'] [data-ctl='svHdgKnob'],
 .app[data-tut-highlight='svAltKnob'] [data-ctl='svAltKnob'],
 .app[data-tut-highlight='iaf'] [data-ctl='iaf'] {

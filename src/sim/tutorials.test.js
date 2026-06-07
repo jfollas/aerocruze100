@@ -245,11 +245,20 @@ describe('Lesson 3 — SkyView & nav variations (playthrough)', () => {
     sim.actions.setConfig({ svHeadingBug: 200 }) // SkyView HDG knob
     expect(done('hdg-bug')).toBe(true)
 
-    sim.actions.setConfig({ svAltBug: 3000, svAltBugSet: true })
+    sim.actions.setConfig({ svAltBug: 3300, svAltBugSet: true }) // a few hundred ft above
     expect(done('alt-bug')).toBe(true)
 
-    sim.actions.knobPress() // engage -> SkyView mode
+    sim.actions.setConfig({ svVsBug: 500 }) // VS bug (drag the VS tape)
+    expect(done('vs-bug')).toBe(true)
+
+    sim.actions.mode() // MODE enters SkyView mode (from AP OFF)
+    expect(done('enter-mode')).toBe(true)
+
+    sim.actions.knobPress() // engage and fly the bugs
     expect(done('engage')).toBe(true)
+
+    sim.tickUntil((s) => at('althold').check(s), 600) // climbs to the bug, captures ALT HOLD
+    expect(done('althold')).toBe(true)
 
     sim.actions.setConfig({ skyviewCdi: 'flightplan' })
     expect(done('cdi-gps')).toBe(true)
@@ -266,6 +275,9 @@ describe('Lesson 3 — SkyView & nav variations (playthrough)', () => {
 
     sim.tickUntil((s) => at('crab').check(s), 600)
     expect(done('crab')).toBe(true)
+
+    sim.actions.mode() // MODE exits SkyView mode -> TRK, syncs track & VS
+    expect(done('exit-mode')).toBe(true)
   })
 })
 

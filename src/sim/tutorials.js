@@ -35,6 +35,7 @@ export const CONTROL_IDS = [
   'sensorBtn',
   'cdiSource',
   'altBug',
+  'vsBug',
   'svHdgKnob',
   'svAltKnob',
   'iaf',
@@ -285,9 +286,9 @@ const coupledApproach = {
 const skyview = {
   id: 'skyview',
   title: 'SkyView & nav variations',
-  blurb: 'Fly the SkyView bugs, an LNAV stepdown, a hold-in-lieu turn, and a crosswind.',
+  blurb: 'SkyView mode per the install manual: bugs, MODE in/out, ALT HOLD, a course & a crosswind.',
   init: (a) => {
-    reset(a, { ...NAV_NONE, groundSpeed: 150, curAlt: 3000 })
+    reset(a, { ...NAV_NONE, groundSpeed: 150, curAlt: 3000, svAltBug: 3300, svVsBug: 0 })
     a.setConfig({ power: 'on' })
   },
   steps: [
@@ -295,45 +296,70 @@ const skyview = {
     {
       id: 'src-skyview',
       prompt: 'Select SkyView as the nav source.',
-      note: 'The autopilot follows the SkyView bugs; with a flight plan on the CDI it also flies the lateral GPS course.',
+      note: 'With a SkyView connected, the MODE button toggles SkyView mode and all commands come from the SkyView — not the autopilot (Install Manual §10).',
       highlight: 'navSource',
       check: (s) => s.skyview === 'on',
     },
-    ...altSyncSteps('The SkyView cannot auto-sync the altimeter (unlike Aspen/G5), so sync it manually.'),
+    ...altSyncSteps(
+      'BE SURE TO SYNC THE ALTIMETER to the SkyView before using SkyView mode — the SkyView cannot auto-sync it (unlike Aspen/G5). The manual stresses this.'
+    ),
     {
       id: 'hdg-bug',
       prompt: 'Set the heading bug: turn the SkyView HDG/TRK knob (or drag the HSI).',
+      note: 'The CDI source decides what the autopilot follows laterally — more on that after engaging.',
       highlight: 'svHdgKnob',
       check: (s) => Math.abs(angleDiff(160, s.svHeadingBug)) >= 15,
     },
     {
       id: 'alt-bug',
-      prompt: 'Set the altitude bug: turn the SkyView ALT knob (or drag the alt tape).',
+      prompt: 'Set the altitude bug a few hundred feet above you (turn the SkyView ALT knob, or drag the alt tape).',
       highlight: 'svAltKnob',
-      check: (s) => Math.abs(s.svAltBug - 3500) >= 100,
+      check: (s) => s.svAltBug >= 3200,
+    },
+    {
+      id: 'vs-bug',
+      prompt: 'Now set a vertical-speed bug too: drag the VS tape to about +500 fpm.',
+      note: 'For vertical control the SkyView needs BOTH an altitude bug AND a VS bug — pick a VS appropriate for the target. (With no altitude bug set, the autopilot just follows the VS bug.)',
+      highlight: 'vsBug',
+      check: (s) => Math.abs(s.svVsBug) >= 300,
+    },
+    {
+      id: 'enter-mode',
+      prompt: 'Press MODE on the autopilot to enter SkyView mode.',
+      note: 'MODE enters SkyView mode whether the AP is off (powered, not engaged) or already engaged. On entry the Vizion grabs the SkyView’s current heading, altitude, and VS bugs.',
+      highlight: 'mode',
+      check: (s) => s.lateralMode === 'SKYVIEW',
     },
     {
       id: 'engage',
-      prompt: 'Press the knob to engage — it enters SkyView mode and flies the bugs.',
+      prompt: 'Press the knob to engage the autopilot and fly the bugs.',
       highlight: 'knob',
       check: (s) => s.apEngaged && s.lateralMode === 'SKYVIEW',
     },
     {
+      id: 'althold',
+      prompt: 'Watch it climb to the altitude bug and level off — the display then shows ALT HOLD.',
+      note: 'This takes a few seconds as it climbs to the bug.',
+      highlight: null,
+      pause: false,
+      check: (s) => s.verticalMode === 'ALTHOLD',
+    },
+    {
       id: 'cdi-gps',
       prompt: 'Set the PFD CDI source to GPS so the autopilot flies the lateral flight plan.',
-      note: 'Through the SkyView you get the lateral course only — no coupled glideslope.',
+      note: 'CDI source sets the lateral behavior: SKYVIEW or an external GPS (e.g. GNS430) follows the flight plan; no selection — or LOC/VOR/ILS — follows the heading bug instead. Through the SkyView you get the lateral course only — there is no coupled glideslope.',
       highlight: 'cdiSource',
       check: (s) => s.skyviewCdi === 'flightplan',
     },
     {
       id: 'ubaya',
-      prompt: 'Start at UBAYA·teardrop (NE) — the 430W flies the hold-in-lieu procedure turn to reverse onto the final.',
+      prompt: 'Start at UBAYA·teardrop (NE) — the GPS flies the hold-in-lieu procedure turn to reverse onto the final.',
       highlight: 'iaf',
       check: (s) => s.scenarioActive && s.hilptEntry === 'TEARDROP',
     },
     {
       id: 'stepdown',
-      prompt: 'No glideslope here — step down by lowering the SkyView ALT bug to about 2,300 ft; the autopilot descends to the bug.',
+      prompt: 'No glideslope here — step down by lowering the SkyView ALT bug to about 2,300 ft; the autopilot descends to the bug, then holds (ALT HOLD).',
       highlight: 'svAltKnob',
       pause: false,
       check: (s) => s.svAltBug <= 2400,
@@ -351,8 +377,14 @@ const skyview = {
       pause: false,
       check: (s) => Math.abs(angleDiff(s.curGT, s.curTrack)) >= 5,
     },
+    {
+      id: 'exit-mode',
+      prompt: 'Press MODE again to exit SkyView mode — it reverts to TRK, syncing to your current track and vertical speed.',
+      highlight: 'mode',
+      check: (s) => s.lateralMode !== 'SKYVIEW',
+    },
     recapStep(
-      'With SkyView you fly the bugs (HDG/ALT), get the lateral GPS course but no coupled glideslope — so you step the ALT bug down through the crossing altitudes — and the autopilot crabs to hold the course in wind.'
+      'SkyView mode (Install Manual §10): MODE enters/exits it; sync the altimeter first; the CDI source picks heading-bug vs flight-plan tracking; set an ALT bug AND a VS bug for vertical (ALT HOLD on capture); there is no coupled glideslope; and exiting with MODE syncs your current track and VS.'
     ),
   ],
 }

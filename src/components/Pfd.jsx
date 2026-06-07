@@ -482,7 +482,7 @@ export default function Pfd({ state, actions }) {
             <span className="pfd-chip-lbl">ALT</span>
             <span className="pfd-chip-val">{svAltBugSet ? svAltBug : '– – –'}</span>
           </button>
-          <div className="pfd-chip">
+          <div className="pfd-chip" data-ctl="vsBug">
             <span className="pfd-chip-lbl">VS</span>
             <span className="pfd-chip-val">{svVsBug > 0 ? '+' : ''}{svVsBug}</span>
           </div>
