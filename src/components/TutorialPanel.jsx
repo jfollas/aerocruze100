@@ -11,8 +11,13 @@ export default function TutorialPanel({ tut }) {
   const drag = useRef(null)
 
   const head = {
+    draggable: false,
+    // Block the browser's native drag (it otherwise grabs a ghost image of the
+    // page/selection when you start dragging the header).
+    onDragStart: (e) => e.preventDefault(),
     onPointerDown: (e) => {
       if (e.target.closest('button')) return
+      e.preventDefault() // suppress native text-selection / element drag
       e.currentTarget.setPointerCapture?.(e.pointerId)
       drag.current = { px: e.clientX, py: e.clientY, x: pos.x, y: pos.y }
     },
