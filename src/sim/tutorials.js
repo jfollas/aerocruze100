@@ -107,6 +107,16 @@ const altSyncSteps = (note) => [
   },
 ]
 
+// An opening step: states the lesson's goals and notes the window can be moved.
+// No `check`, so it's a read-only notice the user advances with Next. Default
+// pause (true) freezes the clock so a powered-on lesson doesn't boot while it's read.
+const openerStep = (goals) => ({
+  id: 'intro',
+  prompt: goals,
+  note: 'Tip: drag this window by its title bar to move it anywhere on screen — keep it clear of the controls or the display you want to watch.',
+  highlight: null,
+})
+
 // A closing step: recap what was covered and invite the user to close the panel.
 // It has no `check`, so it's a read-only notice the user finishes with the button.
 const recapStep = (text) => ({
@@ -126,6 +136,9 @@ const startup = {
   blurb: 'Power up, sync the altimeter, engage, then fly a heading and altitudes.',
   init: (a) => reset(a, { ...NAV_NONE, groundSpeed: 120, curAlt: 3000 }), // stays off — the user powers on
   steps: [
+    openerStep(
+      'Goals: power the autopilot up, sync its altimeter to your PFD, engage it, then fly a selected heading in TRK and use ALT HOLD and altitude-select (SEL) to hold and change altitude — plus how trim is annunciated.'
+    ),
     {
       id: 'power-on',
       prompt: 'Flip the PWR switch up to power the autopilot on.',
@@ -202,6 +215,9 @@ const coupledApproach = {
     a.setConfig({ power: 'on' })
   },
   steps: [
+    openerStep(
+      'Goals: set up and fly a fully coupled RNAV (GPS) LPV approach on the GPS (430W) — arm the approach, fly it in GPSS, step down to the platform altitude, let the LPV glideslope couple at the final approach fix, then start a missed approach.'
+    ),
     bootStep,
     {
       id: 'src-430w',
@@ -300,6 +316,9 @@ const skyview = {
     a.setConfig({ power: 'on' })
   },
   steps: [
+    openerStep(
+      'Goals: operate the autopilot in Dynon SkyView mode — set the heading, altitude and VS bugs, enter and exit with MODE, pick the CDI source, fly a hold-in-lieu course reversal and an LNAV-style stepdown (no coupled glideslope), and watch it crab in a crosswind.'
+    ),
     bootStep,
     {
       id: 'src-skyview',
@@ -326,23 +345,19 @@ const skyview = {
       check: (s) => s.svAltBug >= 3300,
     },
     {
+      // No VS dial on the SkyView panel in this trainer, so set the VS bug for
+      // the user rather than asking them to drag it.
       id: 'vs-bug',
-      prompt: 'Now set a vertical-speed bug too — drag the VS bug up to about +500 fpm.',
-      note: 'For vertical control the SkyView needs BOTH an altitude bug AND a VS bug — pick a VS appropriate for the target. (With no altitude bug set, the autopilot just follows the VS bug.)',
-      highlight: 'vsBug',
-      check: (s) => s.svVsBug >= 300,
+      prompt: "Vertical control also needs a vertical-speed bug. There's no VS dial on the SkyView panel here, so we've set a +500 fpm VS bug for you.",
+      note: 'On a real SkyView you set the VS bug on the Dynon. Vertical needs BOTH an altitude bug AND a VS bug — with no altitude bug set, the autopilot just follows the VS bug.',
+      highlight: null,
+      setup: (a) => a.setConfig({ svVsBug: 500 }),
     },
     {
       id: 'enter-mode',
-      prompt: 'Press MODE on the autopilot to enter SkyView mode.',
-      note: 'MODE enters SkyView mode whether the AP is off (powered, not engaged) or already engaged. On entry the Vizion grabs the SkyView’s current heading, altitude, and VS bugs.',
+      prompt: 'Press MODE on the autopilot to enter SkyView mode — it engages right away and starts flying the bugs. No separate knob press is needed to activate it.',
+      note: 'MODE enters SkyView mode from the AP-OFF screen (powered, not engaged) or while already engaged; on entry the Vizion grabs the SkyView’s current heading, altitude and VS bugs (Install Manual §10.2).',
       highlight: 'mode',
-      check: (s) => s.lateralMode === 'SKYVIEW',
-    },
-    {
-      id: 'engage',
-      prompt: 'Press the knob to engage the autopilot and fly the bugs.',
-      highlight: 'knob',
       check: (s) => s.apEngaged && s.lateralMode === 'SKYVIEW',
     },
     {
@@ -368,25 +383,39 @@ const skyview = {
       check: (s) => s.scenarioActive && s.hilptEntry === 'TEARDROP',
     },
     {
-      id: 'stepdown',
-      prompt: 'No glideslope here — step down by lowering the SkyView ALT bug to about 2,300 ft; the autopilot descends to the bug, then holds (ALT HOLD).',
-      highlight: 'svAltKnob',
+      id: 'watch-entry',
+      prompt: 'Watch the GPS fly the hold-in-lieu procedure turn — outbound, then a turn to reverse course and roll out established on the inbound final approach course.',
+      highlight: null,
       pause: false,
+      accel: true,
+      check: (s) => Math.abs(angleDiff(s.gpsDtk, 96)) < 12 && Math.abs(s.cdiDev) < 0.7,
+    },
+    {
+      id: 'stepdown',
+      prompt: 'No glideslope through the SkyView — so step the altitude down yourself: lower the SkyView ALT bug to about 2,300 ft.',
+      note: 'You fly the vertical with the bugs here; the GPS only supplies the lateral course.',
+      highlight: 'svAltKnob',
       check: (s) => s.svAltBug <= 2400,
     },
     {
-      id: 'wind',
-      prompt: 'Add a crosswind: drag the Wind speed slider up above ~10 kt.',
-      highlight: 'windSlider',
-      check: (s) => s.windSpd > 10,
-    },
-    {
-      id: 'crab',
-      prompt: 'Watch the autopilot crab into the wind — the magenta ground-track diamond offsets from the nose while the course stays centered.',
+      id: 'watch-descent',
+      prompt: 'Watch it descend to the bug and level at 2,300 ft — the display shows ALT HOLD.',
       highlight: null,
       pause: false,
-      accel: 4,
-      check: (s) => Math.abs(angleDiff(s.curGT, s.curTrack)) >= 5,
+      accel: true,
+      check: (s) => s.verticalMode === 'ALTHOLD' && s.curAlt < 2500,
+    },
+    {
+      // The crab is a steady-state result that appears within a tick of the wind
+      // being set, so there's nothing to "wait out" — make it a read-then-Next
+      // notice (clock running so the crab develops and stays visible) rather than
+      // auto-advancing the instant the diamond offsets.
+      id: 'crab',
+      prompt:
+        "We've added a crosswind. Watch the autopilot crab into it — the magenta ground-track diamond offsets from the nose while the course stays centred. When you're done watching, press Next.",
+      highlight: null,
+      pause: false,
+      setup: (a) => a.setConfig({ windDir: 186, windSpd: 25 }), // a crosswind on the ~096 inbound, set for the user
     },
     {
       id: 'exit-mode',
@@ -409,6 +438,9 @@ const emergencies = {
     a.setConfig({ power: 'on' })
   },
   steps: [
+    openerStep(
+      'Goals: use the safety features — emergency LEVEL recovery, control-wheel steering (CWS), the engaged minimum-airspeed protection and the disengaged AEP bank backstop, a sensor failure and its power-cycle reset, and the altimeter-sync gotcha.'
+    ),
     bootStep,
     {
       id: 'induce-bank',
@@ -446,12 +478,15 @@ const emergencies = {
     },
     {
       id: 'cws',
-      prompt: 'Hold the CWS button to hand-fly (CWS AP), then release to resume on the new attitude.',
+      prompt:
+        'Press and HOLD the CWS button to hand-fly (CWS AP) — the airplane banks into a turn while you hold it. Release when you like the new heading; the autopilot resumes and holds it (TRK). Notice the new track.',
       note: 'A quick TAP of CWS instead disconnects the autopilot.',
       highlight: 'cws',
       pause: false,
-      setup: (a) => a.setConfig({ inducedClimb: false, warning: null }), // end the airspeed demo
-      check: (s) => s.cwsHeld === true,
+      setup: (a) => a.setConfig({ inducedClimb: false, warning: null, cwsStartTrack: null }), // end the airspeed demo
+      // complete after release, once the hand-flown turn has changed the heading
+      check: (s) =>
+        !s.cwsHeld && s.cwsStartTrack != null && Math.abs(angleDiff(s.curTrack, s.cwsStartTrack)) > 8,
     },
     {
       id: 'disengage',
@@ -461,19 +496,22 @@ const emergencies = {
     },
     {
       id: 'aep-bank',
-      prompt: 'AEP stays armed (STBY) while the autopilot is off. Watch a bank develop — at 40° AEP trips to ACTIVE and nudges the bank back inside the limit (it holds you off the limit; it does not roll fully level).',
+      prompt: 'AEP stays armed (STBY) while the autopilot is off. Watch a bank develop — at 40° AEP trips to ACTIVE and nudges the bank back to a safe angle (about 35°) and holds it there. It does NOT roll fully level.',
       note: 'Automatic Emergency Protection: a hands-off bank backstop when the AP is disengaged.',
       highlight: null,
       pause: false,
+      accel: 3,
       setup: (a) => a.setConfig({ aep: 'stby', inducedBank: 50, inducedClimb: false }),
-      check: (s) => s.aep === 'active',
+      // advance once AEP has corrected and the bank is held at the safe angle
+      // (~35°) — not the instant it trips, so the nudge-and-hold is visible.
+      check: (s) => s.aep === 'stby' && Math.abs(s.inducedBank) < 40 && Math.abs(s.bankAngle) > 30,
     },
     {
       id: 'aep-disable',
       prompt: 'AEP can be turned off: while disengaged, press MODE to toggle it OFF.',
       note: 'Only disable it for planned maneuvers — steep turns, stalls — where the protection would get in the way. Re-arm it (MODE again) afterward.',
       highlight: 'mode',
-      setup: (a) => a.setConfig({ aep: 'stby', inducedBank: 0, inducedClimb: false }),
+      setup: (a) => a.setConfig({ aep: 'stby', inducedClimb: false }), // keep the held ~35° bank
       check: (s) => s.aep === 'off',
     },
     {

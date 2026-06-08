@@ -19,10 +19,14 @@ export const ALT_CAPTURE_GAIN = 10
 const SPIRAL_VS_PER_DEG = 22 // fpm of descent per degree of bank
 const DIVE_KT_PER_DEG = 0.8 // extra airspeed per degree of bank
 const ROLLOFF_RATE = 8 // deg/sec, slow uncommanded roll-off when disengaged & hands-off
+// Control-wheel steering (§5.4.7): while CWS is held the servos follow the pilot.
+// We have no yoke in the sim, so model a steady hand-flown banked turn; on release
+// the AP resumes holding the new track.
+export const CWS_TURN_BANK = 20 // deg of the simulated hand-flown turn while CWS is held
 // AEP bank protection (§8.2), active while DISENGAGED: at >40° it nudges the bank
 // back toward a safe angle inside the limit — it does NOT roll fully level.
 const AEP_ROLL_RATE = 25 // deg/sec the roll servo nudges the bank back
-export const AEP_SAFE_BANK = 30 // deg AEP nudges toward (just inside the 40° limit)
+export const AEP_SAFE_BANK = 35 // deg AEP nudges toward and holds (just inside the 40° limit)
 // Min-airspeed protection (§8.5), active while ENGAGED: a held nose-up bleeds the
 // airspeed; at the minimum the AP lowers the nose slightly to hold it.
 export const MIN_IAS = 60 // kt minimum indicated airspeed
@@ -87,7 +91,13 @@ export function stepFlight(s, dt) {
   const patch = {}
 
   // ---- Lateral ----
-  if (s.apEngaged && !s.emergencyLevel && !s.gyroMode) {
+  if (s.apEngaged && s.cwsHeld) {
+    // CWS held: the pilot is hand-flying — simulate a steady banked turn so the
+    // track changes while held; the AP resumes on the new track at release.
+    const bank = approach(s.bankAngle, CWS_TURN_BANK, Math.abs(CWS_TURN_BANK - s.bankAngle) * Math.min(1, ROLL_RESPONSE * dt))
+    patch.bankAngle = bank
+    patch.curTrack = mod360(s.curTrack + (bank / MAX_BANK) * TURN_RATE * dt)
+  } else if (s.apEngaged && !s.emergencyLevel && !s.gyroMode) {
     // Eased, coordinated turn toward the selected track.
     const { bankAngle, curTrack } = lateralStep(s, dt, s.selTrack)
     patch.bankAngle = bankAngle

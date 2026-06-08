@@ -3,7 +3,7 @@
 // returns the next state. All section references (§) point at that handbook.
 
 import * as E from './events.js'
-import { stepFlight, mod360, MIN_IAS } from './flight.js'
+import { stepFlight, mod360, MIN_IAS, AEP_SAFE_BANK } from './flight.js'
 import { stepScenario } from './scenario.js'
 import { FIELD_ELEV, bearingToTrue, trueToMag } from './geo.js'
 import { PLANS, PLAN_ENTRY } from './navplan.js'
@@ -48,6 +48,7 @@ export const initialState = {
   preselectArmed: false,
   emergencyLevel: false,
   cwsHeld: false,
+  cwsStartTrack: null, // track (deg) when CWS was pressed, to measure the hand-flown turn
   aep: 'stby', // off | stby | active — standby by default & after each power cycle (§8.2)
   warning: null, // null | SENSOR | MIN_AS | MAX_AS
 
@@ -159,7 +160,7 @@ export function reducer(state, event) {
     case E.CWS_TAP:
       return state.apEngaged ? disengage(state) : state // a tap disengages (§5.2.2)
     case E.CWS_PRESS:
-      return state.apEngaged ? { ...state, cwsHeld: true } : state
+      return state.apEngaged ? { ...state, cwsHeld: true, cwsStartTrack: state.curTrack } : state
     case E.CWS_RELEASE:
       return onCwsRelease(state)
     case E.AP_LVL:
@@ -300,6 +301,11 @@ function enterSkyview(s) {
   const climbing = s.svAltBugSet && Math.abs(s.svAltBug - (s.curAlt + s.altDelta)) >= 50
   return {
     ...s,
+    // Pressing MODE enters SkyView mode AND engages — it starts flying the bugs
+    // immediately, from the AP-OFF screen or while already engaged (Install
+    // Manual §10.2). No separate knob press is needed to engage.
+    apEngaged: true,
+    preselectArmed: false,
     lateralMode: 'SKYVIEW',
     verticalMode: climbing ? 'SEL' : 'SVS',
     selTrack: mod360(s.svHeadingBug),
@@ -618,7 +624,13 @@ function onTick(s, dt) {
   // STBY once the bank is back inside the limit.
   if (!next.apEngaged && next.aep !== 'off') {
     if (Math.abs(next.bankAngle) > 40) next.aep = 'active'
-    else if (next.aep === 'active' && Math.abs(next.bankAngle) < 34) next.aep = 'stby'
+    else if (next.aep === 'active' && Math.abs(next.bankAngle) <= AEP_SAFE_BANK + 1) {
+      // AEP has bumped the bank back inside the limit. Clear to STBY and HOLD at
+      // the safe bank — the correction does NOT roll fully level, and the upset
+      // is absorbed so the bank doesn't drift back to the limit (no limit cycle).
+      next.aep = 'stby'
+      next.inducedBank = Math.sign(next.bankAngle || 1) * AEP_SAFE_BANK
+    }
   }
 
   // Min-airspeed protection while engaged (§8.5): annunciate MIN AS and have the

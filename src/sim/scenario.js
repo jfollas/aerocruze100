@@ -18,6 +18,7 @@ import {
   ALT_CAPTURE_GAIN,
   MAX_BANK,
   TURN_RATE,
+  CWS_TURN_BANK,
 } from './flight.js'
 import {
   FIX_XY,
@@ -147,7 +148,11 @@ export function stepScenario(s, dt) {
   // Steer the HEADING. In a tracking mode the desired GROUND track is converted
   // to the heading that makes it good in the wind (the autopilot crabs); the
   // disengaged / gyro cases just hold a heading and let the wind drift them.
-  if (s.apEngaged && !s.emergencyLevel && !s.gyroMode) {
+  if (s.apEngaged && s.cwsHeld) {
+    // CWS held: the pilot hand-flies a banked turn; the AP resumes at release.
+    patch.bankAngle = approach(s.bankAngle, CWS_TURN_BANK, 30 * dt)
+    patch.curTrack = mod360(s.curTrack + (patch.bankAngle / MAX_BANK) * TURN_RATE * dt)
+  } else if (s.apEngaged && !s.emergencyLevel && !s.gyroMode) {
     const cmdHdg = trueToMag(windCorrectedHeadingTrue(magToTrue(targetTrack), wind, tas))
     // GPSS flies fly-by turns at standard rate; manual TRK uses the full bank
     const { bankAngle, curTrack } = lateralStep(s, dt, cmdHdg, onGpss ? GPSS_BANK : MAX_BANK)

@@ -254,14 +254,12 @@ describe('Lesson 3 — SkyView & nav variations (playthrough)', () => {
     sim.actions.setConfig({ svAltBug: 3300, svAltBugSet: true }) // a few hundred ft above
     expect(done('alt-bug')).toBe(true)
 
-    sim.actions.setConfig({ svVsBug: 500 }) // VS bug (drag the VS tape)
-    expect(done('vs-bug')).toBe(true)
+    run('vs-bug') // the step sets the VS bug for the user (no SkyView VS dial)
+    expect(sim.get().svVsBug).toBe(500)
 
-    sim.actions.mode() // MODE enters SkyView mode (from AP OFF)
+    sim.actions.mode() // MODE enters SkyView mode AND engages (no separate knob press)
     expect(done('enter-mode')).toBe(true)
-
-    sim.actions.knobPress() // engage and fly the bugs
-    expect(done('engage')).toBe(true)
+    expect(sim.get().apEngaged).toBe(true)
 
     sim.tickUntil((s) => at('althold').check(s), 600) // climbs to the bug, captures ALT HOLD
     expect(done('althold')).toBe(true)
@@ -272,15 +270,20 @@ describe('Lesson 3 — SkyView & nav variations (playthrough)', () => {
     sim.actions.setConfig({ scenarioActive: true, scenarioIaf: 'UBAYA_TEARDROP' })
     expect(done('ubaya')).toBe(true)
 
+    sim.tickUntil((s) => at('watch-entry').check(s), 600) // fly the teardrop, established inbound
+    expect(done('watch-entry')).toBe(true)
+
     sim.actions.setConfig({ svAltBug: 2300 }) // lower the bug to step down
     expect(done('stepdown')).toBe(true)
 
-    run('wind') // sets a crosswind direction
-    sim.actions.setConfig({ windSpd: 35 })
-    expect(done('wind')).toBe(true)
+    sim.tickUntil((s) => at('watch-descent').check(s), 600) // descend and level at 2300
+    expect(done('watch-descent')).toBe(true)
 
-    sim.tickUntil((s) => at('crab').check(s), 600)
-    expect(done('crab')).toBe(true)
+    run('crab') // the step's setup sets the crosswind for the user (read-then-Next notice)
+    expect(sim.get().windSpd).toBeGreaterThan(10)
+    const crab = (s) => Math.abs(((s.curGT - s.curTrack + 540) % 360) - 180)
+    sim.tickUntil((s) => crab(s) >= 5, 600) // the crab develops for the user to watch
+    expect(crab(sim.get())).toBeGreaterThanOrEqual(5)
 
     sim.actions.mode() // MODE exits SkyView mode -> TRK, syncs track & VS
     expect(done('exit-mode')).toBe(true)
@@ -316,10 +319,13 @@ describe('Lesson 4 — Emergencies & safety (playthrough)', () => {
     expect(done('min-as')).toBe(true)
     expect(sim.get().curIAS).toBeLessThanOrEqual(62) // bled to the minimum
 
-    run('cws') // ends the airspeed demo, then hold CWS
+    run('cws') // ends the airspeed demo, then hand-fly with CWS
     sim.actions.cwsPress()
-    expect(done('cws')).toBe(true)
+    const turned = (s) => Math.abs(((s.curTrack - s.cwsStartTrack + 540) % 360) - 180)
+    sim.tickUntil((s) => turned(s) > 10, 30) // the hand-flown banked turn develops the heading
     sim.actions.cwsRelease()
+    expect(done('cws')).toBe(true) // completes after release, with the new track
+    expect(sim.get().lateralMode).toBe('TRK') // AP resumes holding it
 
     sim.actions.knobHold() // disengage
     expect(done('disengage')).toBe(true)
