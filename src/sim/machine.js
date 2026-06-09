@@ -3,7 +3,7 @@
 // returns the next state. All section references (§) point at that handbook.
 
 import * as E from './events.js'
-import { stepFlight, mod360, MIN_IAS, AEP_SAFE_BANK } from './flight.js'
+import { stepFlight, mod360, MIN_IAS, AEP_SAFE_BANK, AEP_TRIP_BANK } from './flight.js'
 import { stepScenario } from './scenario.js'
 import { FIELD_ELEV, bearingToTrue, trueToMag } from './geo.js'
 import { PLANS, PLAN_ENTRY } from './navplan.js'
@@ -619,18 +619,13 @@ function onTick(s, dt) {
     next = { ...next, verticalMode: 'ALTHOLD' }
   }
 
-  // AEP bank protection while disengaged (§8.2): trips ACTIVE above the 40° bank
-  // limit (the roll servo then nudges it back toward a safe angle), and clears to
-  // STBY once the bank is back inside the limit.
+  // AEP bank protection while disengaged (§8.2): the bank is allowed to develop to
+  // ~45° before AEP trips ACTIVE and the roll servo nudges it back to a safe ~35°
+  // (it does NOT roll fully level). If the over-bank input persists the bank builds
+  // back up and AEP catches it again — a repeating backstop, off the limit.
   if (!next.apEngaged && next.aep !== 'off') {
-    if (Math.abs(next.bankAngle) > 40) next.aep = 'active'
-    else if (next.aep === 'active' && Math.abs(next.bankAngle) <= AEP_SAFE_BANK + 1) {
-      // AEP has bumped the bank back inside the limit. Clear to STBY and HOLD at
-      // the safe bank — the correction does NOT roll fully level, and the upset
-      // is absorbed so the bank doesn't drift back to the limit (no limit cycle).
-      next.aep = 'stby'
-      next.inducedBank = Math.sign(next.bankAngle || 1) * AEP_SAFE_BANK
-    }
+    if (Math.abs(next.bankAngle) >= AEP_TRIP_BANK) next.aep = 'active'
+    else if (next.aep === 'active' && Math.abs(next.bankAngle) <= AEP_SAFE_BANK) next.aep = 'stby'
   }
 
   // Min-airspeed protection while engaged (§8.5): annunciate MIN AS and have the

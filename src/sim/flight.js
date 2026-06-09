@@ -26,7 +26,8 @@ export const CWS_TURN_BANK = 20 // deg of the simulated hand-flown turn while CW
 // AEP bank protection (§8.2), active while DISENGAGED: at >40° it nudges the bank
 // back toward a safe angle inside the limit — it does NOT roll fully level.
 const AEP_ROLL_RATE = 25 // deg/sec the roll servo nudges the bank back
-export const AEP_SAFE_BANK = 35 // deg AEP nudges toward and holds (just inside the 40° limit)
+export const AEP_SAFE_BANK = 35 // deg AEP nudges back toward (a safe angle inside the limit)
+export const AEP_TRIP_BANK = 45 // deg the bank reaches before AEP catches it and nudges back
 // Min-airspeed protection (§8.5), active while ENGAGED: a held nose-up bleeds the
 // airspeed; at the minimum the AP lowers the nose slightly to hold it.
 export const MIN_IAS = 60 // kt minimum indicated airspeed

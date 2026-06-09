@@ -83,6 +83,14 @@ export default function TutorialPanel({ tut }) {
           <span className="tut-count">
             {stepIndex + 1} / {stepCount}
           </span>
+          <button
+            className="tut-audio"
+            onClick={tut.toggleMuted}
+            aria-label={tut.muted ? 'Unmute narration' : 'Mute narration'}
+            title={tut.muted ? 'Unmute narration' : 'Mute narration'}
+          >
+            {tut.muted ? '🔇' : '🔊'}
+          </button>
           <button className="tut-x" onClick={tut.exit} aria-label="Exit tutorial" title="Exit">
             ✕
           </button>

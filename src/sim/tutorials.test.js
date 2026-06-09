@@ -309,6 +309,8 @@ describe('Lesson 4 — Emergencies & safety (playthrough)', () => {
     sim.actions.apLvl()
     expect(done('level')).toBe(true)
 
+    expect(done('level-recover')).toBe(true) // explanation step (emergencyLevel already true)
+
     run('level-revert')
     sim.tickUntil((s) => at('level-revert').check(s), 40)
     expect(done('level-revert')).toBe(true)
@@ -324,22 +326,27 @@ describe('Lesson 4 — Emergencies & safety (playthrough)', () => {
     const turned = (s) => Math.abs(((s.curTrack - s.cwsStartTrack + 540) % 360) - 180)
     sim.tickUntil((s) => turned(s) > 10, 30) // the hand-flown banked turn develops the heading
     sim.actions.cwsRelease()
-    expect(done('cws')).toBe(true) // completes after release, with the new track
+    sim.tickUntil((s) => at('cws').check(s), 30) // AP rolls back to wings-level after release
+    expect(done('cws')).toBe(true) // completes after the roll-out, with the new track
     expect(sim.get().lateralMode).toBe('TRK') // AP resumes holding it
+    expect(Math.abs(sim.get().bankAngle)).toBeLessThan(3) // level before the next step pauses the clock
 
     sim.actions.knobHold() // disengage
     expect(done('disengage')).toBe(true)
 
-    // AEP bank protection trips ACTIVE on the developing overbank (animated) and
-    // nudges the bank back inside the 40° limit (does not roll fully level)
-    run('aep-bank')
-    sim.tickUntil((s) => at('aep-bank').check(s), 30)
-    expect(done('aep-bank')).toBe(true)
-    sim.tickUntil((s) => s.aep === 'stby', 30) // nudged back below the limit
-    expect(Math.abs(sim.get().bankAngle)).toBeLessThan(40)
+    // AEP bank protection: the bank develops to ~45, AEP trips ACTIVE and nudges it
+    // back to a safe ~35 (does not roll fully level), then catches it again — cycling
+    run('aep-bank') // read-then-Next notice; setup induces the over-bank
+    sim.tickUntil((s) => s.aep === 'active', 120)
+    expect(Math.abs(sim.get().bankAngle)).toBeGreaterThan(40) // got past 40 toward ~45
+    sim.tickUntil((s) => s.aep === 'stby', 30) // nudged back inside the limit
+    expect(Math.abs(sim.get().bankAngle)).toBeLessThanOrEqual(37) // to ~35, not level
+    sim.tickUntil((s) => s.aep === 'active', 60) // and it catches the bank again (cycles)
+    expect(sim.get().aep).toBe('active')
 
-    // AEP can be disabled with MODE while disengaged
+    // AEP can be disabled with MODE while disengaged; the step levels the airplane
     run('aep-disable')
+    expect(Math.abs(sim.get().bankAngle)).toBeLessThan(2) // wings-level as the step starts
     sim.actions.mode()
     expect(done('aep-disable')).toBe(true)
 
