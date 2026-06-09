@@ -186,9 +186,7 @@ describe('Lesson 2 — Coupled approach + missed (playthrough)', () => {
     sim.actions.setConfig({ gpsData: 'ifr', arinc: 'none', skyview: 'off' })
     expect(done('src-430w')).toBe(true)
 
-    altSync(sim)
-    expect(done('altsync-dial')).toBe(true)
-
+    // (early ALT SYNC removed — the `resync` step below is the altimeter sync for this lesson)
     sim.actions.setConfig({ scenarioActive: true, scenarioIaf: 'WUDAT' })
     expect(done('start-iaf')).toBe(true)
     expect(sim.get().approachActive).toBe(true) // selecting the IAF auto-arms the approach

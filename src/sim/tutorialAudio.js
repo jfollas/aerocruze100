@@ -33,8 +33,6 @@ export const TUTORIAL_AUDIO = {
   "approach/intro": "approach-intro.mp3",
   "approach/boot": "boot.mp3",
   "approach/src-430w": "approach-src-430w.mp3",
-  "approach/altsync-open": "altsync-open.mp3",
-  "approach/altsync-dial": "altsync-dial.mp3",
   "approach/start-iaf": "approach-start-iaf.mp3",
   "approach/engage": "engage.mp3",
   "approach/gpss": "approach-gpss.mp3",

@@ -241,7 +241,8 @@ const coupledApproach = {
       highlight: 'navSource',
       check: (s) => s.gpsData === 'ifr' && s.skyview === 'off',
     },
-    ...altSyncSteps("Pre-flight altimeter check — set the autopilot's altitude to match the airplane's."),
+    // (No pre-flight ALT SYNC here — the `resync` step below does the altimeter
+    // sync for this lesson, just before the altitude restrictions matter.)
     {
       id: 'start-iaf',
       prompt: 'Load the approach: pick an initial fix to begin — try WUDAT (the south T-bar arm).',
@@ -270,34 +271,43 @@ const coupledApproach = {
     },
     {
       id: 'platform',
-      prompt: 'Descend to the 2300 ft platform: press ALT, set 2300, add a descent rate (~700 fpm down), and confirm.',
+      prompt: 'Descend to the 2300 ft platform: press ALT, set exactly 2300 (coarse steps by 1000, then fine by 100), add a descent rate (~700 fpm down), and confirm.',
       highlight: altThenKnob,
       // one-task-at-a-time narration (see tutorialAudio.js):
       //   0 press ALT · 1 dial to 2300 · 2 press to VS · 3 set the descent · 4 confirm
+      // Cue 1 and the final check require selAlt to land on exactly 2300 (not just
+      // ≤2400), so coarse-to-2000 doesn't satisfy it — the user must fine-tune up.
       cues: [
         { until: (s) => s.screen === 'SEL_ALT' },
-        { until: (s) => s.selAlt <= 2400 },
+        { until: (s) => s.selAlt === 2300 },
         { until: (s) => s.cursor === 'vs' },
         { until: (s) => s.selVS <= -600 },
         {}, // "press to confirm" — the step's own check advances to the next step
       ],
-      check: (s) => s.verticalMode === 'SEL' && s.selAlt <= 2400,
+      check: (s) => s.verticalMode === 'SEL' && s.selAlt === 2300,
     },
     {
+      // Fast-forward the descent and the dull inbound cruise, but stop the
+      // acceleration ~2 NM before ZIMBO so the next step can slow down for the
+      // glidepath capture. gsDist is the range to the threshold; ZIMBO is ~4.9 NM
+      // out, so gsDist <= 7 is roughly 2 NM short of the FAF.
       id: 'level-platform',
       prompt: 'Let it descend and level at 2300 while GPSS flies you toward ZIMBO.',
       highlight: null,
       pause: false,
       accel: true,
-      check: (s) => s.verticalMode === 'ALTHOLD' && s.curAlt < 2500,
+      check: (s) =>
+        (s.verticalMode === 'ALTHOLD' || s.verticalMode === 'GS_ARM') && s.curAlt < 2500 && s.gsDist != null && s.gsDist <= 7,
     },
     {
+      // Slowed accel (2×, not the default 8×) for the run into ZIMBO so the
+      // glidepath is visibly descending to meet the airplane as it couples.
       id: 'couple',
-      prompt: 'At ZIMBO the LPV glideslope couples automatically — watch it start down.',
-      note: 'GS ARM → GS CPLD as the glidepath descends to meet you at the FAF.',
+      prompt: 'At ZIMBO the LPV glideslope couples automatically — watch it start down. As it captures, bring the power back (about 2000 RPM or less) and trim for your approach speed.',
+      note: 'GS ARM → GS CPLD as the glidepath descends to meet you at the FAF. The autopilot has only pitch to fly the path — it can’t touch the throttle, so you must keep managing power and trim to let it hold the glidepath at a stable approach speed.',
       highlight: null,
       pause: false,
-      accel: true,
+      accel: 2,
       check: (s) => s.verticalMode === 'GS_CPLD',
     },
     {
@@ -310,8 +320,8 @@ const coupledApproach = {
     },
     {
       id: 'go-missed',
-      prompt: 'Going missed: while still coupled (GS CPLD), momentarily press ALT to break off the glideslope and climb (the autopilot stays in GPSS).',
-      note: 'This only works while GS CPLD — the ALT-press missed-approach climb (500 fpm, staying in GPSS, §5.4.6) can only be initiated while coupled to the glideslope. If you let it drop below 700 ft AGL or disconnect first, you fly the missed by hand. The display shows SVS (the climb rate) — a missed approach has no target altitude.',
+      prompt: 'Going missed is on you — cram (power up), climb (pitch up), clean (flaps and gear). The autopilot won’t fly the missed for you. In this demo you’re still coupled (GS CPLD), so press ALT to break off the glidepath and start the climb — the autopilot stays in GPSS.',
+      note: 'The ALT-press go-around (500 fpm climb, staying in GPSS, §5.4.6) only works while GS CPLD. If you disconnected at the 700 ft AGL limit — or dropped below it — that option is gone and you hand-fly the missed. The display shows SVS (the climb rate); a missed approach has no target altitude.',
       highlight: 'alt',
       check: (s) => s.verticalMode === 'SVS' && s.selVS > 0,
     },

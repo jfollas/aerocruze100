@@ -36,6 +36,11 @@
   cursor: pointer;
   border-radius: 8px;
   touch-action: none;
+  /* a press-and-hold (used for the knob's fine mode) must not pop the iOS
+     text-selection magnifier / callout */
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
 }
 .btn-hit:focus-visible,
 .knob-hit:focus-visible {
@@ -57,6 +62,9 @@
   border-radius: 50%;
   cursor: grab;
   touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
   display: grid;
   place-items: center;
 }
