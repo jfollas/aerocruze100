@@ -86,7 +86,8 @@
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.04em;
 }
-.tut-x {
+.tut-x,
+.tut-audio {
   border: 0;
   background: transparent;
   color: #8b9bb0;
@@ -94,10 +95,15 @@
   line-height: 1;
   cursor: pointer;
   padding: 2px;
-  transition: color 0.15s;
+  transition: color 0.15s, opacity 0.15s;
 }
-.tut-x:hover {
+.tut-x:hover,
+.tut-audio:hover {
   color: #eef4ff;
+}
+.tut-audio {
+  font-size: 0.95rem;
+  opacity: 0.9;
 }
 
 .tut-prog {

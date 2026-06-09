@@ -127,7 +127,7 @@ describe('Lesson 1 — Startup & basic modes (full playthrough)', () => {
     expect(done('power-on')).toBe(true)
 
     sim.tick(3.5)
-    expect(done('boot')).toBe(true)
+    expect(sim.get().power).toBe('on') // boot finished (notice step advances via Next, not a check)
 
     expect(done('altsync-open')).toBe(false)
     sim.actions.alt()
@@ -181,7 +181,7 @@ describe('Lesson 2 — Coupled approach + missed (playthrough)', () => {
 
     L.init(sim.actions) // powered on (booting), NAV none, gs 90
     sim.tick(3.5)
-    expect(done('boot')).toBe(true)
+    expect(sim.get().power).toBe('on') // boot finished
 
     sim.actions.setConfig({ gpsData: 'ifr', arinc: 'none', skyview: 'off' })
     expect(done('src-430w')).toBe(true)
@@ -224,8 +224,10 @@ describe('Lesson 2 — Coupled approach + missed (playthrough)', () => {
     sim.actions.alt() // missed approach from GS_CPLD
     expect(done('go-missed')).toBe(true)
 
-    sim.tickUntil((s) => at('climb-out').check(s), 400)
-    expect(done('climb-out')).toBe(true)
+    // climb-out is a read-then-Next notice (no check); the SVS climb is underway
+    sim.tickUntil((s) => s.agl != null && s.agl > 1000, 400)
+    expect(sim.get().verticalMode).toBe('SVS')
+    expect(sim.get().curVS).toBeGreaterThan(0)
   })
 })
 
@@ -240,7 +242,7 @@ describe('Lesson 3 — SkyView & nav variations (playthrough)', () => {
 
     L.init(sim.actions)
     sim.tick(3.5)
-    expect(done('boot')).toBe(true)
+    expect(sim.get().power).toBe('on') // boot finished
 
     sim.actions.setConfig({ gpsData: 'none', arinc: 'none', skyview: 'on' })
     expect(done('src-skyview')).toBe(true)
@@ -311,14 +313,17 @@ describe('Lesson 4 — Emergencies & safety (playthrough)', () => {
 
     expect(done('level-recover')).toBe(true) // explanation step (emergencyLevel already true)
 
+    // level-revert is a read-then-Next notice (no check): LEVEL auto-reverts to TRK
     run('level-revert')
-    sim.tickUntil((s) => at('level-revert').check(s), 40)
-    expect(done('level-revert')).toBe(true)
+    sim.tickUntil((s) => !s.emergencyLevel && s.lateralMode === 'TRK' && s.apEngaged, 40)
+    expect(sim.get().emergencyLevel).toBe(false)
+    expect(sim.get().lateralMode).toBe('TRK')
 
-    // Min-airspeed protection (engaged): a held climb bleeds the speed -> MIN AS
+    // Min-airspeed protection (engaged): a held climb bleeds the speed -> MIN AS.
+    // Also a read-then-Next notice (no check); the protection trips while watched.
     run('min-as')
-    sim.tickUntil((s) => at('min-as').check(s), 30)
-    expect(done('min-as')).toBe(true)
+    sim.tickUntil((s) => s.warning === 'MIN_AS', 30)
+    expect(sim.get().warning).toBe('MIN_AS')
     expect(sim.get().curIAS).toBeLessThanOrEqual(62) // bled to the minimum
 
     run('cws') // ends the airspeed demo, then hand-fly with CWS

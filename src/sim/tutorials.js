@@ -74,12 +74,17 @@ function reset(actions, cfg = {}) {
 }
 
 // shared step fragments -----------------------------------------------------
+// Powering on was the previous action, so this is a read-then-Next notice (no
+// `check`): it points out the AP OFF annunciation rather than auto-advancing the
+// moment the boot finishes. `pause: false` lets the clock run so the ~3 s boot
+// completes in the background while it's read; the airplane just coasts level
+// (AP off). Shared by every lesson so they all behave the same.
 const bootStep = {
   id: 'boot',
-  prompt: 'Powering up the autopilot — wait for it to finish booting.',
+  prompt: 'The autopilot is disengaged when it powers up — indicated by the words AP OFF on the display. Press Next to continue.',
+  note: 'It never wakes up flying the airplane; you always engage it deliberately.',
   highlight: null,
-  pause: false, // the clock must run to finish the 3-second boot
-  check: (s) => s.power === 'on',
+  pause: false,
 }
 
 const synced = (s) => Math.abs(s.altDelta) < 10
@@ -311,14 +316,16 @@ const coupledApproach = {
       check: (s) => s.verticalMode === 'SVS' && s.selVS > 0,
     },
     {
+      // Read-then-Next (no `check`): the key caution is that an SVS missed climb
+      // has no altitude capture, so we don't want to auto-advance — the user reads
+      // it and clicks Next. The clock runs (pause:false) so the airplane is visibly
+      // climbing away from the runway while they read.
       id: 'climb-out',
       prompt:
-        'Watch the missed-approach climb away from the runway. Important: this is a vertical-speed (SVS) climb with no target altitude — the autopilot will NOT level off at the missed-approach altitude on its own. You must stop the climb yourself and manage power and trim as required.',
+        'Watch the missed-approach climb away from the runway. Important: this is a vertical-speed (SVS) climb with no target altitude — the autopilot will NOT level off at the missed-approach altitude on its own. You must stop the climb yourself and manage power and trim as required. When you’re ready, click Next to continue.',
       note: 'A missed-approach climb has no altitude capture — the pilot levels it off (§5.4.6).',
       highlight: null,
       pause: false,
-      accel: true,
-      check: (s) => s.agl != null && s.agl > 1000,
     },
     recapStep(
       'You flew a fully coupled approach: 430W + GPSS flies the lateral plan, you stepped down to the 2,300 ft platform, the LPV glidepath coupled at the FAF, and an ALT press at the MAP started the missed-approach climb.'
@@ -491,22 +498,25 @@ const emergencies = {
       check: (s) => s.emergencyLevel === true,
     },
     {
+      // Read-then-Next notice: the clock runs (accel) so the user watches LEVEL
+      // recover and auto-revert to TRK, then clicks Next when they've seen it.
       id: 'level-revert',
-      prompt: 'Emergency level recovers the airplane, then reverts to TRK after about 15 seconds.',
+      prompt: 'Emergency level recovers the airplane, then reverts to TRK after about 15 seconds. Watch it revert, then click Next to continue.',
       highlight: null,
       pause: false,
       accel: 4,
       setup: (a) => a.setConfig({ inducedBank: 0 }),
-      check: (s) => !s.emergencyLevel && s.lateralMode === 'TRK' && s.apEngaged,
     },
     {
+      // Read-then-Next notice: the clock runs (pause:false) so the held nose-up
+      // bleeds the speed and MIN AS flashes while the user watches; they click Next
+      // when done. The next step's setup ends the airspeed demo.
       id: 'min-as',
-      prompt: 'Airspeed protection (engaged): a held nose-up bleeds the speed. At the minimum, MIN AS flashes and the autopilot lowers the nose to hold the minimum until the speed recovers.',
+      prompt: 'Airspeed protection (engaged): a held nose-up bleeds the speed. At the minimum, MIN AS flashes and the autopilot lowers the nose to hold the minimum until the speed recovers. Watch it work, then click Next to continue.',
       note: 'This works while the autopilot is engaged — separate from AEP, which is the bank backstop while disengaged.',
       highlight: null,
       pause: false,
       setup: (a) => a.setConfig({ inducedClimb: true, groundSpeed: 120 }),
-      check: (s) => s.warning === 'MIN_AS',
     },
     {
       id: 'cws',
