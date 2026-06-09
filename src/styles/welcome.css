@@ -1,161 +1,430 @@
-/* First-load welcome / disclaimer modal with a dark backdrop and a live
-   practice knob. Visual language matches the approach modal (.apch-modal). */
+/* First-load welcome / disclaimer modal. Restyled from the Claude Design
+   handoff: neutral near-black surfaces, amber accent reserved for active/CTA,
+   instrument-cyan readout, IBM Plex type. All tokens & rules scoped to the
+   overlay so nothing leaks into the rest of the app. */
 .welc-overlay {
+  --bg: #14161a;
+  --panel: #1b1e23;
+  --panel-2: #20242b;
+  --inset: #101216;
+  --line: #2b2f37;
+  --line-soft: #232730;
+  --ink: #e9ecf1;
+  --muted: #99a1ad;
+  --faint: #6a727e;
+  --accent: oklch(0.79 0.135 72);
+  --accent-line: oklch(0.79 0.135 72 / 0.42);
+  --i-cyan: #27d6e2;
+  --sans: 'IBM Plex Sans', system-ui, sans-serif;
+  --mono: 'IBM Plex Mono', ui-monospace, monospace;
+
   position: fixed;
   inset: 0;
   z-index: 100;
-  background: rgba(2, 4, 8, 0.78);
-  backdrop-filter: blur(2px);
+  display: grid;
+  place-items: center;
+  padding: 32px;
+  font-family: var(--sans);
+  color: var(--ink);
+  /* semi-transparent so the simulator shows through, dimmed and softly blurred */
+  background: radial-gradient(120% 120% at 50% 0%, rgba(22, 26, 32, 0.66), rgba(8, 9, 12, 0.82) 70%);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+}
+/* faint scanline overlay so it reads as a lit cockpit backdrop */
+.welc-overlay::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(180deg, transparent 0 3px, rgba(0, 0, 0, 0.16) 3px 4px);
+  pointer-events: none;
+  opacity: 0.25;
+}
+
+/* ---------- modal shell ---------- */
+.welc-modal {
+  position: relative;
+  z-index: 1;
+  width: 600px;
+  max-width: 100%;
+  max-height: calc(100vh - 64px);
   display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
+  flex-direction: column;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  box-shadow:
+    0 0 0 1px oklch(0.79 0.135 72 / 0.05),
+    0 40px 90px -30px rgba(0, 0, 0, 0.85),
+    0 8px 30px -16px rgba(0, 0, 0, 0.7);
+  overflow: hidden;
 }
-.welc-box {
-  max-width: 560px;
-  width: 100%;
-  max-height: 90vh;
-  overflow-y: auto;
-  background: #161c25;
-  border: 1px solid #2c3744;
-  border-radius: 12px;
-  padding: 18px 24px 22px;
-  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.7);
+.welc-modal::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  opacity: 0.6;
 }
+
+/* ---------- header ---------- */
 .welc-head {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  margin-bottom: 10px;
+  gap: 12px;
+  padding: 20px 22px 18px;
+  border-bottom: 1px solid var(--line-soft);
 }
-.welc-head h2 {
-  margin: 0;
-  font-size: 1.15rem;
-  color: #eaf2ff;
+.welc-mark {
+  font-family: var(--mono);
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: 0.14em;
+  color: var(--bg);
+  background: var(--accent);
+  padding: 5px 9px;
+  border-radius: 7px;
+  flex: none;
 }
-.welc-x {
-  border: 0;
-  background: transparent;
-  color: #9aa7b8;
-  font-size: 1.6rem;
-  line-height: 1;
+.welc-ttl {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.welc-ttl b {
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.welc-ttl span {
+  font-size: 12px;
+  color: var(--faint);
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+.welc-close {
+  margin-left: auto;
+  flex: none;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
   cursor: pointer;
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--muted);
+  font-size: 16px;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
 }
-.welc-x:hover {
-  color: #eaf2ff;
-}
-.welc-disclaimer {
-  margin: 0 0 14px;
-  font-size: 0.86rem;
-  line-height: 1.6;
-  color: #aebccd;
-}
-.welc-box b {
-  color: #dfe6f0;
-}
-.welc-affil {
-  font-size: 0.74rem;
-  color: #8c9aab;
-  margin-top: -6px;
-}
-.welc-sub {
-  margin: 14px 0 6px;
-  font-size: 0.95rem;
-  color: #cfe0ff;
-}
-.welc-list {
-  margin: 0 0 8px;
-  padding-left: 20px;
-  font-size: 0.84rem;
-  line-height: 1.55;
-  color: #aebccd;
-}
-.welc-list li {
-  margin-bottom: 5px;
-}
-.welc-kbd-note,
-.welc-try {
-  margin: 4px 0 10px;
-  font-size: 0.8rem;
-  color: #8c9aab;
-}
-.welc-box kbd {
-  background: #0e1319;
-  border: 1px solid #2c3744;
-  border-radius: 4px;
-  padding: 0 5px;
-  font-size: 0.78rem;
-  color: #cfe0ff;
+.welc-close:hover {
+  background: var(--panel-2);
+  color: var(--ink);
+  border-color: var(--line);
 }
 
-/* practice knob + readout */
-.welc-practice {
+/* ---------- scrolling body ---------- */
+.welc-body {
+  padding: 18px 22px 4px;
+  overflow-y: auto;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+.welc-body::-webkit-scrollbar {
+  width: 10px;
+}
+.welc-body::-webkit-scrollbar-thumb {
+  background: var(--line);
+  border-radius: 6px;
+  border: 3px solid var(--panel);
+}
+
+.welc-lede {
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--muted);
+  margin: 0 0 14px;
+}
+.welc-lede b {
+  color: var(--ink);
+  font-weight: 600;
+}
+.welc-lede .welc-danger {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+/* legal note — quiet recessed strip */
+.welc-legal {
+  font-size: 11.5px;
+  line-height: 1.55;
+  color: var(--faint);
+  background: var(--inset);
+  border: 1px solid var(--line-soft);
+  border-radius: 10px;
+  padding: 11px 13px;
+  margin: 0 0 20px;
+}
+.welc-legal b {
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.welc-seclabel {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin: 0 0 12px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.welc-seclabel::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--line-soft);
+}
+
+/* instruction list with custom markers */
+.welc-steps {
+  list-style: none;
+  margin: 0 0 16px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+}
+.welc-steps li {
+  position: relative;
+  padding-left: 26px;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--muted);
+}
+.welc-steps li b {
+  color: var(--ink);
+  font-weight: 600;
+}
+.welc-steps li i {
+  font-style: italic;
+  color: var(--ink);
+}
+.welc-steps li::before {
+  content: '';
+  position: absolute;
+  left: 4px;
+  top: 7px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 8px oklch(0.79 0.135 72 / 0.5);
+}
+
+.welc-keyline {
+  font-size: 12.5px;
+  color: var(--muted);
+  margin: 0 0 22px;
+  line-height: 1.9;
+}
+.welc-keyline kbd {
+  font-family: var(--mono);
+  font-size: 11px;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-bottom-width: 2px;
+  border-radius: 4px;
+  padding: 1px 5px;
+  color: var(--ink);
+}
+
+/* ---------- try-it card ---------- */
+.welc-tryit {
+  margin: 0 0 8px;
+}
+.welc-hint {
+  font-size: 12.5px;
+  color: var(--faint);
+  margin: 0 0 12px;
+}
+.welc-demo {
   display: flex;
   align-items: center;
   gap: 22px;
-  background: #0e1319;
-  border: 1px solid #232d39;
-  border-radius: 10px;
-  padding: 18px 20px;
-  margin: 4px 0 16px;
+  background: var(--inset);
+  border: 1px solid var(--line-soft);
+  border-radius: 12px;
+  padding: 20px 22px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.02);
 }
-.welc-knob-wrap {
-  width: 88px;
-  height: 88px;
-  flex: 0 0 auto;
+.welc-knob {
+  width: 92px;
+  height: 92px;
   border-radius: 50%;
-  background: radial-gradient(circle at 50% 38%, #3a4452, #1b222c 70%);
-  border: 1px solid #46505e;
-  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.5), 0 2px 4px rgba(0, 0, 0, 0.4);
-  display: grid;
-  place-items: center;
+  flex: none;
+  position: relative;
+  cursor: ew-resize;
+  touch-action: none;
+  background: radial-gradient(circle at 38% 30%, #4a4a4e, #18181a 72%);
+  box-shadow:
+    inset 0 2px 4px rgba(255, 255, 255, 0.1),
+    inset 0 -4px 10px rgba(0, 0, 0, 0.7),
+    0 6px 16px -6px rgba(0, 0, 0, 0.7);
+  transition: box-shadow 0.12s;
+}
+.welc-knob:active {
+  cursor: grabbing;
+}
+.welc-knob.fine {
+  box-shadow:
+    inset 0 2px 4px rgba(255, 255, 255, 0.1),
+    inset 0 -4px 10px rgba(0, 0, 0, 0.7),
+    0 0 0 2px var(--accent-line),
+    0 6px 16px -6px rgba(0, 0, 0, 0.7);
+}
+.welc-pointer {
+  position: absolute;
+  top: 9px;
+  left: 50%;
+  width: 4px;
+  height: 26px;
+  border-radius: 3px;
+  background: linear-gradient(180deg, var(--i-cyan), oklch(0.7 0.12 210));
+  transform: translateX(-50%);
+  transform-origin: 50% 37px;
+  box-shadow: 0 0 8px rgba(39, 214, 226, 0.6);
+}
+.welc-hub {
+  position: absolute;
+  inset: 28px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 35%, #2c2c30, #1c1c1f 70%, #141416);
+  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.08), inset 0 -2px 4px rgba(0, 0, 0, 0.6);
 }
 .welc-readout {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 4px;
 }
-.welc-value {
-  font-variant-numeric: tabular-nums;
-  font-size: 2.2rem;
-  font-weight: 700;
+.welc-val {
+  font-family: var(--mono);
+  font-size: 38px;
+  font-weight: 600;
   line-height: 1;
-  color: #6fe0ff;
-  text-shadow: 0 0 10px rgba(80, 200, 255, 0.45);
+  color: var(--i-cyan);
+  text-shadow: 0 0 14px rgba(39, 214, 226, 0.4);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.01em;
 }
-.welc-value-sub {
-  font-size: 0.78rem;
-  color: #9aa7b8;
+.welc-metaline {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--muted);
 }
-.welc-value-hint {
-  font-size: 0.74rem;
-  color: #6b7888;
+.welc-metaline .welc-live {
+  color: var(--accent);
+}
+.welc-tap {
+  font-size: 11.5px;
+  color: var(--faint);
 }
 
+/* ---------- footer ---------- */
 .welc-foot {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-top: 6px;
+  gap: 16px;
+  padding: 16px 22px;
+  border-top: 1px solid var(--line-soft);
+  background: linear-gradient(180deg, transparent, oklch(0.79 0.135 72 / 0.02));
 }
 .welc-dontshow {
   display: flex;
   align-items: center;
-  gap: 7px;
-  font-size: 0.8rem;
-  color: #9aa7b8;
+  gap: 9px;
   cursor: pointer;
+  user-select: none;
 }
-.welc-start {
-  background: #2d6cdf;
-  border: 0;
-  color: #fff;
-  font-size: 0.9rem;
+.welc-dontshow input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+.welc-dontshow .welc-box {
+  width: 18px;
+  height: 18px;
+  border-radius: 5px;
+  border: 1px solid var(--line);
+  background: var(--panel-2);
+  display: grid;
+  place-items: center;
+  transition: all 0.12s;
+}
+.welc-dontshow .welc-box::after {
+  content: '✓';
+  font-size: 12px;
+  color: var(--bg);
+  opacity: 0;
+  transform: scale(0.5);
+  transition: all 0.12s;
+}
+.welc-dontshow input:checked + .welc-box {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.welc-dontshow input:checked + .welc-box::after {
+  opacity: 1;
+  transform: scale(1);
+}
+.welc-dontshow span {
+  font-size: 13px;
+  color: var(--muted);
+}
+.welc-dontshow:hover .welc-box {
+  border-color: var(--faint);
+}
+
+.welc-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  font-family: var(--sans);
+  font-size: 14px;
   font-weight: 600;
-  padding: 9px 20px;
-  border-radius: 8px;
+  letter-spacing: 0.01em;
+  color: var(--bg);
+  background: var(--accent);
+  border: none;
+  padding: 11px 22px;
+  border-radius: 9px;
   cursor: pointer;
+  box-shadow: 0 0 20px oklch(0.79 0.135 72 / 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  transition: transform 0.1s, filter 0.12s;
 }
-.welc-start:hover {
-  background: #3a78ec;
+.welc-cta:hover {
+  filter: brightness(1.06);
+}
+.welc-cta:active {
+  transform: translateY(1px);
+}
+.welc-cta::after {
+  content: '→';
+  font-size: 15px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .welc-knob,
+  .welc-cta,
+  .welc-close,
+  .welc-dontshow .welc-box {
+    transition: none;
+  }
 }

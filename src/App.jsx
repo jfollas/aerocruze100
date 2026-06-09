@@ -9,7 +9,7 @@ import SkyviewKnobs from './components/SkyviewKnobs.jsx'
 import Pfd from './components/Pfd.jsx'
 import ApproachPanel from './components/ApproachPanel.jsx'
 import TutorialPanel from './components/TutorialPanel.jsx'
-import WelcomeModal from './components/WelcomeModal.jsx'
+import WelcomeModal, { shouldShowWelcome } from './components/WelcomeModal.jsx'
 import { useTutorial } from './hooks/useTutorial.js'
 import { LESSONS } from './sim/tutorials.js'
 import './styles/app.css'
@@ -38,14 +38,9 @@ export default function App() {
   const tut = useTutorial(state, actions)
   const [picker, setPicker] = useState(false) // tutorials dropdown (top nav)
   const [conditions, setConditions] = useState(false) // induce-conditions popup (top nav)
-  // First-load welcome / disclaimer modal (skipped if dismissed with "don't show again").
-  const [welcome, setWelcome] = useState(() => {
-    try {
-      return localStorage.getItem('aerocruze.welcomeSeen') !== '1'
-    } catch {
-      return true
-    }
-  })
+  // First-load welcome / disclaimer modal — shown unless dismissed at this
+  // version or newer (so a content bump re-shows it; see WELCOME_VERSION).
+  const [welcome, setWelcome] = useState(shouldShowWelcome)
 
   // Open the Conditions popup automatically when a tutorial step highlights one
   // of the controls that now lives inside it, so the glow/control is visible.
@@ -101,7 +96,10 @@ export default function App() {
   return (
     <div className="app" data-tut-highlight={tut.highlight || undefined}>
       <div className="app-top">
-        <h1 className="app-title">Aerocruze 100 Autopilot Simulator</h1>
+        <h1 className="app-title">
+          <span className="app-badge">AC100</span>
+          <span className="app-title-text">Aerocruze 100 Autopilot Simulator</span>
+        </h1>
         <div className="app-top-center">
           {!tut.active && (
             <div className="app-tut-launcher">

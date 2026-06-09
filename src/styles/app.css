@@ -23,9 +23,31 @@
   flex: 1 1 0;
   min-width: 0;
   margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 11px;
   font-size: 1.12rem;
   line-height: 1.2;
   color: #dfe6f0;
+}
+.app-title-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* brand mark — the amber "AC100" badge, matching the intro modal */
+.app-badge {
+  flex: none;
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-weight: 600;
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  line-height: 1;
+  color: #14161a;
+  background: oklch(0.79 0.135 72);
+  padding: 4px 8px;
+  border-radius: 6px;
 }
 .app-top-center {
   flex: 0 0 auto;
